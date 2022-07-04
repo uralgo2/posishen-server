@@ -13,6 +13,7 @@
  *     loadLimit: Number,
  *     accountCreatedAt: Date,
  *     restoreHash: String,
+ *     programHash: String
  * }}
  */
 
