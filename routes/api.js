@@ -1,7 +1,10 @@
 let express = require('express')
 let router = express.Router()
-let crypto = require('crypto');
-let sql = require('../db')
+let crypto = require('crypto')
+let sql = require('../db');
+
+(async () => sql = await sql)()
+
 let nodemailer = require('nodemailer')
 const {isProduction, ApiError} = require("../utils");
 
@@ -46,29 +49,23 @@ router.get('/signup', async (req, res) => {
 
     try
     {
-        sql.query('SELECT * FROM users WHERE email = ?', [email], async (error, results) => {
-            if (error) throw error
+        let [users] = await sql.query('SELECT * FROM users WHERE email = ?', [email])
 
-            if (!results.length) {
-                let hash = crypto.createHash("md5").update(email + '|' + password).digest("hex")
+        if (!users.length) {
+            let hash = crypto.createHash("md5").update(email + '|' + password).digest("hex")
 
-                sql.query('INSERT INTO users(email, hashedPassword) VALUES(?, ?)',
-                    [email, hash],
-                    async (e, result) => {
-                        if (e) throw e
+            let [result] = await sql.query('INSERT INTO users(email, hashedPassword) VALUES(?, ?)', [email, hash])
 
-                        let secret = crypto.createHash("md5").update(Date.now().toString()).digest("hex")
+            let secret = crypto.createHash("md5").update(Date.now().toString()).digest("hex")
 
-                        sql.query('INSERT INTO sessions(userId, secret) VALUES(?, ?)', [result.insertId, secret], async (e) => {
-                            if (e) throw e
-                            res.send({successful: true, c: secret})
-                        })
-                    })
-            } else throw new ApiError("Этот адрес электронной почты уже используется")
-        })
+            await sql.query('INSERT INTO sessions(userId, secret) VALUES(?, ?)', [result.insertId, secret])
+
+            return res.send({successful: true, c: secret})
+        } else throw new ApiError("Этот адрес электронной почты уже используется")
     }
     catch (e){
-        console.log(e)
+        if(!(e instanceof ApiError)) console.log(e)
+
         return res.send({
             successful: false,
             message: e instanceof ApiError ? e.message : "Произошла ошибка на стороне сервера"
@@ -81,37 +78,32 @@ router.get('/login', async (req, res) => {
     let password = req.query['password']
 
     try {
-        sql.query(`SELECT * FROM users WHERE email = '${email}'`, async (error, results) => {
-            if (error) throw error
+        let [users] = await sql.query(`SELECT * FROM users WHERE email = ?`,  [email])
 
-            if (results.length) {
-                /**
-                 * @type {User}
-                 */
-                let user = results[0]
+        if (users.length) {
+            /**
+             * @type {User}
+             */
+            let user = users[0]
 
-                let hash = crypto.createHash("md5").update(email + '|' + password).digest("hex")
+            let hash = crypto.createHash("md5").update(email + '|' + password).digest("hex")
 
-                if (user.hashedPassword !== hash)
-                    throw new ApiError("Неверный адрес электронной почты или пароль")
-                 else {
-                    let secret = crypto.createHash("md5").update(Date.now().toString()).digest("hex")
+            if (user.hashedPassword !== hash)
+                throw new ApiError("Неверный адрес электронной почты или пароль")
+            else {
+                let secret = crypto.createHash("md5").update(Date.now().toString()).digest("hex")
 
-                    sql.query(`INSERT INTO sessions(userId, secret) 
-                                    VALUES(${user.id}, '${secret}')`,
-                    async (e) =>
-                    {
-                        if (e) throw e
+                sql.query(`INSERT INTO sessions(userId, secret) VALUES(?, ?)`, [user.id, secret])
 
-                        res.send({successful: true, c: secret})
-                    })
-                }
-            } else throw new ApiError("Неверный адрес электронной почты или пароль")
-
-        })
+                return res.send({successful: true, c: secret})
+            }
+        }
+        else
+            throw new ApiError("Неверный адрес электронной почты или пароль")
     }
     catch (e){
-        console.log(e)
+        if(!(e instanceof ApiError)) console.log(e)
+
         return res.send({
             successful: false,
             message: e instanceof ApiError ? e.message : "Произошла ошибка на стороне сервера"
@@ -123,21 +115,24 @@ router.get('/logout', async (req, res) => {
     let secret = req.query['c']
 
     try {
-        sql.query('SELECT * FROM sessions WHERE secret = ?', [secret], async (error, results) => {
-            if (error) throw error
+        let [sessions] = sql.query('SELECT * FROM sessions WHERE secret = ?', [secret])
 
-            if (results.length) {
-                let session = results[0]
-                sql.query('DELETE FROM sessions WHERE id = ?', [session.id], async (error) => {
-                    if (error) throw error
+        if (sessions.length) {
+            /**
+             * @type {UserSession}
+             */
+            let session = sessions[0]
 
-                    res.send({successful: true})
-                })
-            } else throw new ApiError("Сессии не существует")
-        })
+            await sql.query('DELETE FROM sessions WHERE id = ?', [session.id])
+
+            return res.send({successful: true})
+        }
+        else
+            throw new ApiError("Сессии не существует")
     }
     catch (e){
-        console.log(e)
+        if(!(e instanceof ApiError)) console.log(e)
+
         return res.send({
             successful: false,
             message: e instanceof ApiError ? e.message : "Произошла ошибка на стороне сервера"
@@ -149,23 +144,21 @@ router.get('/getProjects', async (req, res) => {
     let secret = req.query['c']
 
     try {
-        sql.query('SELECT * FROM sessions WHERE secret = ?', [secret], async (error, results) => {
-            if (error) throw error
+        let [sessions] = sql.query('SELECT * FROM sessions WHERE secret = ?', [secret])
 
-            if (results.length) {
-                let session = results[0]
+        if (sessions.length) {
+            let session = sessions[0]
 
-                sql.query('SELECT * FROM projects WHERE userId = ?', [session.userId],
-                    async (e, results) => {
-                        if (e) throw e
+            let [projects] = await sql.query('SELECT * FROM projects WHERE userId = ?', [session.userId])
 
-                        return res.send({successful: true, data: results})
-                    })
-            } else throw new ApiError("Сессии не существует")
-        })
+            return res.send({successful: true, data: projects})
+        }
+        else
+            throw new ApiError("Сессии не существует")
     }
     catch (e){
-        console.log(e)
+        if(!(e instanceof ApiError)) console.log(e)
+
         return res.send({
             successful: false,
             message: e instanceof ApiError ? e.message : "Произошла ошибка на стороне сервера"
@@ -177,28 +170,28 @@ router.get('/restore/check', async (req, res) => {
     let hash = req.query['s']
 
     try {
-        sql.query('SELECT * FROM users WHERE restoreHash = ?', [hash],
-            async (e, users) => {
-                if (e) throw e
-                if (users.length) {
-                    let secret = crypto.createHash("md5").update(Date.now().toString()).digest("hex")
-                    /**
-                     * @type {User}
-                     */
-                    let user = users[0]
+        let [users] = await sql.query('SELECT * FROM users WHERE restoreHash = ?', [hash])
 
-                    sql.query('INSERT INTO sessions(userId, secret) VALUES(?, ?)', [user.id, secret], async (e) => {
-                        if (e) throw e
-                        sql.query('UPDATE users SET restoreHash = NULL WHERE id = ?', [user.id], async (e) => {
-                            if (e) throw e
-                            res.send({successful: true, c: secret})
-                        })
-                    })
-                } else throw new ApiError("Ссылка недействительна")
-            })
+        if (users.length) {
+            let secret = crypto.createHash("md5").update(Date.now().toString()).digest("hex")
+
+            /**
+             * @type {User}
+             */
+            let user = users[0]
+
+            await sql.query('INSERT INTO sessions(userId, secret) VALUES(?, ?)', [user.id, secret])
+
+            await sql.query('UPDATE users SET restoreHash = NULL WHERE id = ?', [user.id])
+
+            return res.send({successful: true, c: secret})
+        }
+        else
+            throw new ApiError("Ссылка недействительна")
     }
     catch (e){
-        console.log(e)
+        if(!(e instanceof ApiError)) console.log(e)
+
         return res.send({
             successful: false,
             message: e instanceof ApiError ? e.message : "Произошла ошибка на стороне сервера"
@@ -210,36 +203,36 @@ router.get('/restore', async (req, res) => {
     let email = req.query['email']
 
     try {
-        sql.query('SELECT * FROM users WHERE email = ?', [email], async (error, results) => {
-            if (error) throw error
+        let [users] = await sql.query('SELECT * FROM users WHERE email = ?', [email])
 
-            if (!results.length) throw new ApiError("Пользователя с таким адресом электронной почты не существует")
-            else {
-                let restoreHash = crypto.createHash("md5").update(Date.now().toString()).digest("hex")
-                let user = results[0]
-                sql.query('UPDATE users SET restoreHash = ? WHERE id = ?', [restoreHash, user.id],
-                    async (e) => {
-                        if (e) throw e
+        if (!users.length) throw new ApiError("Пользователя с таким адресом электронной почты не существует")
+        else {
+            let restoreHash = crypto.createHash("md5").update(Date.now().toString()).digest("hex")
+            /**
+             * @type {User}
+             */
+            let user = users[0]
 
-                        let info = await transporter.sendMail({
-                            from: '"Позишен" <noreply@posishen.ru>',
-                            to: "test@email.com",
-                            subject: "Восстановление пароля",
-                            text: "Если вы не запрашивали восстановление пароля, проигнорируйте письмо",
-                            html: `<a href='http://localhost:3000/api/restore/check?s=${restoreHash}'>Перейдите по ссылке, чтобы восстановить пароль</a>`,
-                        })
+            await sql.query('UPDATE users SET restoreHash = ? WHERE id = ?', [restoreHash, user.id])
 
-                        console.log("Message sent: %s", info.messageId)
+            let info = await transporter.sendMail({
+                from: '"Позишен" <noreply@posishen.ru>',
+                to: "test@email.com",
+                subject: "Восстановление пароля",
+                text: "Если вы не запрашивали восстановление пароля, проигнорируйте письмо",
+                html: `<a href='http://localhost:3000/api/restore/check?s=${restoreHash}'>
+                        Перейдите по ссылке, чтобы восстановить пароль</a>`,
+            })
 
-                        console.log("Preview URL: %s", nodemailer.getTestMessageUrl(info))
+            console.log("Message sent: %s", info.messageId)
 
-                        return res.send({successful: true})
-                    })
-            }
-        })
+            console.log("Preview URL: %s", nodemailer.getTestMessageUrl(info))
+
+            return res.send({successful: true})
+        }
     }
     catch (e){
-        console.log(e)
+        if(!(e instanceof ApiError)) console.log(e)
         return res.send({
             successful: false,
             message: e instanceof ApiError ? e.message : "Произошла ошибка на стороне сервера"
@@ -252,40 +245,34 @@ router.get('/changePassword', async (req, res) => {
     let currentPassword = req.query['currentPassword']
     let newPassword = req.query['newPassword']
     try{
-        sql.query('SELECT * FROM sessions WHERE secret = ?', [secret], async (error, results) => {
-            if (error) throw error
+        let [sessions] = await sql.query('SELECT * FROM sessions WHERE secret = ?', [secret])
 
-            if (results.length) {
-                /**
-                 * @type {UserSession}
-                 */
-                let session = results[0]
+        if (sessions.length) {
+            /**
+             * @type {UserSession}
+             */
+            let session = sessions[0]
 
-                sql.query('SELECT * FROM users WHERE id = ?', [session.userId],
-                    async (e, results) => {
-                        if (e) throw e
+            let [users] = await sql.query('SELECT * FROM users WHERE id = ?', [session.userId])
 
-                        let user = results[0]
+            let user = users[0]
 
-                        let hash = crypto.createHash("md5").update(user.email + '|' + currentPassword).digest("hex")
+            let hash = crypto.createHash("md5").update(user.email + '|' + currentPassword).digest("hex")
 
-                        if (user.hashedPassword !== hash) throw new ApiError("Неверный пароль")
+            if (user.hashedPassword !== hash) throw new ApiError("Неверный пароль")
 
-                        let newHash = crypto.createHash("md5").update(user.email + '|' + newPassword).digest("hex")
+            let newHash = crypto.createHash("md5").update(user.email + '|' + newPassword).digest("hex")
 
-                        sql.query("UPDATE users SET hashedPassword = ? WHERE id = ?", [newHash, user.id],
-                            async (e) => {
-                                if (e) throw e
+            await sql.query("UPDATE users SET hashedPassword = ? WHERE id = ?", [newHash, user.id])
 
-                                return res.send({successful: true})
-                            })
-                    })
-            } else throw new ApiError("Сессии не существует")
-
-        })
+            return res.send({successful: true})
+        }
+        else
+            throw new ApiError("Сессии не существует")
     }
     catch (e){
-        console.log(e)
+        if(!(e instanceof ApiError)) console.log(e)
+
         return res.send({
             successful: false,
             message: e instanceof ApiError ? e.message : "Произошла ошибка на стороне сервера"
@@ -301,18 +288,18 @@ router.post('/addProject', async (req, res) => {
      * @type {ProjectJson}
      */
     let project = req.body['project']
-        try{
-        sql.query('SELECT * FROM sessions WHERE secret = ?', [secret], async (error, results) => {
-            if (error) throw error
+    try{
+        let [sessions] = await sql.query('SELECT * FROM sessions WHERE secret = ?', [secret])
 
-            if (results.length) {
-                /**
-                 * @type {UserSession}
-                 */
-                let session = results[0]
-                let queriesCount = project.groups.reduce((prev, group) => prev + group.queries.length, 0)
+        if (sessions.length) {
+            /**
+             * @type {UserSession}
+             */
+            let session = sessions[0]
 
-                sql.query(`INSERT INTO projects(userId, siteAddress,
+            let queriesCount = project.groups.reduce((prev, group) => prev + group.queries.length, 0)
+
+            let [projectResult] = await sql.query(`INSERT INTO projects(userId, siteAddress,
                                                 searchEngine, searchingRange,
                                                 parsingTime, parsingDays,
                                                 queriesCount)
@@ -323,45 +310,36 @@ router.post('/addProject', async (req, res) => {
                     project.parsingTime,
                     project.parsingDays.join(','),
                     queriesCount
-                ], async (e, result) => {
-                    if (e) throw e
-                    let projectId = result.insertId
+                ])
 
-                        for (let gi = 0; gi < project.groups.length; gi++) {
-                            let group = project.groups[gi]
 
-                            sql.query("INSERT INTO _groups(projectId, groupName) VALUES (?, ?)",
-                                [projectId, group.groupName],
-                                async (e, result) => {
-                                    if (e) throw e
+            for (let gi = 0; gi < project.groups.length; gi++) {
+                let group = project.groups[gi]
 
-                                    for (let i = 0; i < group.queries.length; i++) {
-                                        let query = group.queries[i]
+                let [groupResult] = await sql.query("INSERT INTO _groups(projectId, groupName) VALUES (?, ?)",[projectResult.insertId, group.groupName])
 
-                                        sql.query("INSERT INTO queries(groupId, queryText) VALUES(?, ?)",
-                                            [result.insertId, query], (e) => {
-                                                if (e) throw e
-                                            })
-                                    }
+                for (let i = 0; i < group.queries.length; i++) {
+                    let query = group.queries[i]
 
-                                    for (let i = 0; i < project.cities.length; i++) {
-                                        let city = project.cities[i]
+                    await sql.query("INSERT INTO queries(groupId, queryText) VALUES(?, ?)", [groupResult.insertId, query])
+                }
 
-                                        sql.query("INSERT INTO cities(projectId, cityName) VALUES(?, ?)",
-                                            [projectId, city], (e) => {
-                                                if (e) throw e
-                                            })
-                                    }
-                                })
-                        }
-                        return res.send({successful: true})
-                })
-            } else
-                throw new ApiError("Сессии не существует")
-        })
+                for (let i = 0; i < project.cities.length; i++) {
+                    let city = project.cities[i]
+
+                    await sql.query("INSERT INTO cities(projectId, cityName) VALUES(?, ?)", [projectResult.insertId, city])
+                }
+            }
+
+            return res.send({successful: true})
+        }
+        else
+            throw new ApiError("Сессии не существует")
+
     }
     catch (e){
-        console.log(e)
+        if(!(e instanceof ApiError)) console.log(e)
+
         return res.send({
                 successful: false,
                 message: e instanceof ApiError ? e.message : "Произошла ошибка на стороне сервера"
