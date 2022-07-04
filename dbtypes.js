@@ -76,3 +76,23 @@
  * }}
  */
 
+/**
+ * @name GroupJson
+ * @type{{
+ *     groupName: String,
+ *     queries: String[]
+ * }}
+ */
+
+/**
+ * @name ProjectJson
+ * @type {{
+ * siteAddress: String,
+ * searchEngine: Set<String>,
+ * searchingRange: "100" | "200",
+ * parsingTime: String,
+ * parsingDays: Set<String>,
+ * groups: GroupJson[],
+ * cities: String[]
+ * }}
+ */
