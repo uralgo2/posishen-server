@@ -4,6 +4,7 @@ let crypto = require('crypto')
 let sql = require('../db')
 let nodemailer = require('nodemailer')
 const {isProduction, ApiError} = require("../utils")
+const PAGE_COUNT = 25
 const fs = require("fs");
 
 (async () => {
@@ -48,7 +49,7 @@ nodemailer.createTestAccount().then(acc => {
     });
 });
 
-router.get('/signup', async (req, res) => {
+router.get('/signup', async (req, res, next) => {
     let email = req.query['email']
     let password = req.query['password']
 
@@ -65,20 +66,15 @@ router.get('/signup', async (req, res) => {
 
             await sql.query('INSERT INTO sessions(userId, secret) VALUES(?, ?)', [result.insertId, secret])
 
-            return res.send({successful: true, c: secret})
+            return res.send({successful: true, data: {c: secret}})
         } else throw new ApiError("Этот адрес электронной почты уже используется")
     }
     catch (e){
-        if(!(e instanceof ApiError)) console.log(e)
-
-        return res.send({
-            successful: false,
-            message: e instanceof ApiError ? e.message : "Произошла ошибка на стороне сервера"
-        })
+        return next(e)
     }
 })
 
-router.get('/login', async (req, res) => {
+router.get('/login', async (req, res, next) => {
     let email = req.query['email']
     let password = req.query['password']
 
@@ -100,23 +96,18 @@ router.get('/login', async (req, res) => {
 
                 sql.query(`INSERT INTO sessions(userId, secret) VALUES(?, ?)`, [user.id, secret])
 
-                return res.send({successful: true, c: secret})
+                return res.send({successful: true, data: {c: secret}})
             }
         }
         else
             throw new ApiError("Неверный адрес электронной почты или пароль")
     }
     catch (e){
-        if(!(e instanceof ApiError)) console.log(e)
-
-        return res.send({
-            successful: false,
-            message: e instanceof ApiError ? e.message : "Произошла ошибка на стороне сервера"
-        })
+        return next(e)
     }
 })
 
-router.get('/logout', async (req, res) => {
+router.get('/logout', async (req, res, next) => {
     let secret = req.query['c']
 
     try {
@@ -136,16 +127,11 @@ router.get('/logout', async (req, res) => {
             throw new ApiError("Сессии не существует")
     }
     catch (e){
-        if(!(e instanceof ApiError)) console.log(e)
-
-        return res.send({
-            successful: false,
-            message: e instanceof ApiError ? e.message : "Произошла ошибка на стороне сервера"
-        })
+        return next(e)
     }
 })
 
-router.get('/getProjects', async (req, res) => {
+router.get('/getProjects', async (req, res, next) => {
     let secret = req.query['c']
 
     try {
@@ -162,16 +148,11 @@ router.get('/getProjects', async (req, res) => {
             throw new ApiError("Сессии не существует")
     }
     catch (e){
-        if(!(e instanceof ApiError)) console.log(e)
-
-        return res.send({
-            successful: false,
-            message: e instanceof ApiError ? e.message : "Произошла ошибка на стороне сервера"
-        })
+        return next(e)
     }
 })
 
-router.get('/restore/check', async (req, res) => {
+router.get('/restore/check', async (req, res, next) => {
     let hash = req.query['s']
 
     try {
@@ -189,22 +170,17 @@ router.get('/restore/check', async (req, res) => {
 
             await sql.query('UPDATE users SET restoreHash = NULL WHERE id = ?', [user.id])
 
-            return res.send({successful: true, c: secret})
+            return res.send({successful: true, data:{c: secret}})
         }
         else
             throw new ApiError("Ссылка недействительна")
     }
     catch (e){
-        if(!(e instanceof ApiError)) console.log(e)
-
-        return res.send({
-            successful: false,
-            message: e instanceof ApiError ? e.message : "Произошла ошибка на стороне сервера"
-        })
+        return next(e)
     }
 })
 
-router.get('/restore', async (req, res) => {
+router.get('/restore', async (req, res, next) => {
     let email = req.query['email']
 
     try {
@@ -219,6 +195,10 @@ router.get('/restore', async (req, res) => {
             let user = users[0]
 
             await sql.query('UPDATE users SET restoreHash = ? WHERE id = ?', [restoreHash, user.id])
+            await sql.query(`CREATE EVENT delete_restore_hash${Date.now().toString()}
+                                    ON SCHEDULE AT CURRENT_TIMESTAMP + INTERVAL 8 HOUR
+                                    DO
+                                      UPDATE users SET restoreHash = NULL WHERE id = ?`, [user.id])
 
             let info = await transporter.sendMail({
                 from: '"Позишен" <noreply@pozishen.ru>',
@@ -237,15 +217,11 @@ router.get('/restore', async (req, res) => {
         }
     }
     catch (e){
-        if(!(e instanceof ApiError)) console.log(e)
-        return res.send({
-            successful: false,
-            message: e instanceof ApiError ? e.message : "Произошла ошибка на стороне сервера"
-        })
+        return next(e)
     }
 })
 
-router.get('/changePassword', async (req, res) => {
+router.get('/changePassword', async (req, res, next) => {
     let secret = req.query['c']
     let currentPassword = req.query['currentPassword']
     let newPassword = req.query['newPassword']
@@ -276,69 +252,11 @@ router.get('/changePassword', async (req, res) => {
             throw new ApiError("Сессии не существует")
     }
     catch (e){
-        if(!(e instanceof ApiError)) console.log(e)
-
-        return res.send({
-            successful: false,
-            message: e instanceof ApiError ? e.message : "Произошла ошибка на стороне сервера"
-        })
+        return next(e)
     }
 })
 
-router.post('/addProject', async (req, res) => {
-    if (!req.body) return res.sendStatus(400);
-
-    let secret = req.body['c']
-
-    /**
-     * @type {ProjectJson}
-     */
-    let project = req.body['project']
-
-    try{
-        let [sessions] = await sql.query('SELECT * FROM sessions WHERE secret = ?', [secret])
-
-        if (sessions.length) {
-            /**
-             * @type {UserSession}
-             */
-            let session = sessions[0]
-
-
-            let [projectResult] = await sql.query(`INSERT INTO projects(userId, siteAddress,
-                                                searchEngine, searchingRange,
-                                                parsingTime, parsingDays)
-                           VALUES (?, ?, ?, ?, ?, ?)`, [
-                    session.userId, project.siteAddress,
-                    project.searchEngine.join(','),
-                    project.searchingRange,
-                    project.parsingTime,
-                    project.parsingDays.join(',')
-                ])
-
-            for (let i = 0; i < project.cities.length; i++) {
-                let city = project.cities[i]
-
-                await sql.query("INSERT INTO cities(projectId, cityName) VALUES(?, ?)", [projectResult.insertId, city])
-            }
-
-            return res.send({successful: true})
-        }
-        else
-            throw new ApiError("Сессии не существует")
-
-    }
-    catch (e){
-        if(!(e instanceof ApiError)) console.log(e)
-
-        return res.send({
-                successful: false,
-                message: e instanceof ApiError ? e.message : "Произошла ошибка на стороне сервера"
-            })
-    }
-})
-
-router.get('/getMe', async (req, res) => {
+router.get('/getMe', async (req, res, next) => {
     let secret = req.query['c']
 
     try {
@@ -367,12 +285,7 @@ router.get('/getMe', async (req, res) => {
             throw new ApiError("Сессии не существует")
     }
     catch (e){
-        if(!(e instanceof ApiError)) console.log(e)
-
-        return res.send({
-            successful: false,
-            message: e instanceof ApiError ? e.message : "Произошла ошибка на стороне сервера"
-        })
+        return next(e)
     }
 })
 
@@ -380,7 +293,7 @@ router.get('/getClient', async (req, res) => {
     res.download(`${__dirname}/../files/pozishen_client.exe`)
 })
 
-router.get('/getConfig', async (req, res) => {
+router.get('/getConfig', async (req, res, next) => {
     let secret = req.query['c']
 
     try {
@@ -403,20 +316,15 @@ router.get('/getConfig', async (req, res) => {
             throw new ApiError("Сессии не существует")
     }
     catch (e){
-        if(!(e instanceof ApiError)) console.log(e)
-
-        return res.send({
-            successful: false,
-            message: e instanceof ApiError ? e.message : "Произошла ошибка на стороне сервера"
-        })
+        return next(e)
     }
 })
 
-router.get('/addQuery', async (req, res) => {
+router.get('/addQuery', async (req, res, next) => {
     let secret = req.query['c']
     let queryText = req.query['text']
-    let groupId = req.query['groupId']
-    let projectId = req.query['projectId']
+    let groupId = Number(req.query['groupId'])
+    let projectId = Number(req.query['projectId'])
 
     try {
         let [sessions] = await sql.query('SELECT * FROM sessions WHERE secret = ?', [secret])
@@ -465,19 +373,14 @@ router.get('/addQuery', async (req, res) => {
             throw new ApiError("Сессии не существует")
     }
     catch (e){
-        if(!(e instanceof ApiError)) console.log(e)
-
-        return res.send({
-            successful: false,
-            message: e instanceof ApiError ? e.message : "Произошла ошибка на стороне сервера"
-        })
+        return next(e)
     }
 })
 
-router.get('/addGroup', async (req, res) => {
+router.get('/addGroup', async (req, res, next) => {
     let secret = req.query['c']
     let groupName = req.query['name']
-    let projectId = req.query['projectId']
+    let projectId = Number(req.query['projectId'])
 
     try {
         let [sessions] = await sql.query('SELECT * FROM sessions WHERE secret = ?', [secret])
@@ -513,20 +416,15 @@ router.get('/addGroup', async (req, res) => {
             throw new ApiError("Сессии не существует")
     }
     catch (e){
-        if(!(e instanceof ApiError)) console.log(e)
-
-        return res.send({
-            successful: false,
-            message: e instanceof ApiError ? e.message : "Произошла ошибка на стороне сервера"
-        })
+        return next(e)
     }
 })
 
-router.get('/removeQuery', async (req, res) => {
+router.get('/deleteQuery', async (req, res, next) => {
     let secret = req.query['c']
-    let groupId = req.query['groupId']
-    let projectId = req.query['projectId']
-    let queryId = req.query['queryId']
+    let groupId = Number(req.query['groupId'])
+    let projectId = Number(req.query['projectId'])
+    let queryId = Number(req.query['queryId'])
 
     try {
         let [sessions] = await sql.query('SELECT * FROM sessions WHERE secret = ?', [secret])
@@ -588,19 +486,14 @@ router.get('/removeQuery', async (req, res) => {
             throw new ApiError("Сессии не существует")
     }
     catch (e){
-        if(!(e instanceof ApiError)) console.log(e)
-
-        return res.send({
-            successful: false,
-            message: e instanceof ApiError ? e.message : "Произошла ошибка на стороне сервера"
-        })
+        return next(e)
     }
 })
 
-router.get('/removeGroup', async (req, res) => {
+router.get('/deleteGroup', async (req, res, next) => {
     let secret = req.query['c']
-    let groupId = req.query['groupId']
-    let projectId = req.query['projectId']
+    let groupId = Number(req.query['groupId'])
+    let projectId = Number(req.query['projectId'])
 
     try {
         let [sessions] = await sql.query('SELECT * FROM sessions WHERE secret = ?', [secret])
@@ -649,18 +542,190 @@ router.get('/removeGroup', async (req, res) => {
             throw new ApiError("Сессии не существует")
     }
     catch (e){
-        if(!(e instanceof ApiError)) console.log(e)
-
-        return res.send({
-            successful: false,
-            message: e instanceof ApiError ? e.message : "Произошла ошибка на стороне сервера"
-        })
+        return next(e)
     }
 })
 
-router.get('/getTask', async (req, res) => {
+router.get('/deleteProject', async (req, res, next) => {
+    let secret = req.query['c']
+    let projectId = Number(req.query['projectId'])
+
+    try {
+        let [sessions] = await sql.query('SELECT * FROM sessions WHERE secret = ?', [secret])
+
+        if (sessions.length) {
+            let session = sessions[0]
+
+            let [projects] = await sql.query('SELECT * FROM projects WHERE id = ?', [projectId])
+
+            if(!projects.length)
+                throw new ApiError("Проекта не существует")
+
+            /**
+             * @type {Project}
+             */
+            let project = projects[0]
+
+            let [users] = await sql.query('SELECT * FROM users WHERE id = ?', [session.userId])
+
+            /**
+             * @type {User}
+             */
+            let user = users[0]
+
+            if(user.id !== project.userId)
+                throw new ApiError("Вы не владелец проекта")
+
+            await sql.query("DELETE FROM projects WHERE id = ?", [projectId])
+
+            return res.send({successful: true})
+        }
+        else
+            throw new ApiError("Сессии не существует")
+    }
+    catch (e){
+        return next(e)
+    }
+})
+
+router.get('/getQueries', async(req, res, next) => {
+    let secret = req.query['c']
+    let page = (Number(req.query['p']) || 0)  * PAGE_COUNT
+    let groupId = Number(req.query['groupId'])
+    let projectId = Number(req.query['projectId'])
+
+    try {
+        let [sessions] = await sql.query('SELECT * FROM sessions WHERE secret = ?', [secret])
+
+        if (sessions.length) {
+            let session = sessions[0]
+
+            let [groups] = await sql.query('SELECT * FROM _groups WHERE id = ?', [groupId])
+
+            if(!groups.length)
+                throw new ApiError("Группы не существует")
+
+            /**
+             * @type {Group}
+             */
+            let group = groups[0]
+
+            let [projects] = await sql.query('SELECT * FROM projects WHERE id = ?', [projectId])
+
+            if(!projects.length)
+                throw new ApiError("Проекта не существует")
+
+            /**
+             * @type {Project}
+             */
+            let project = projects[0]
+
+            if(group.projectId !== projectId)
+                throw new ApiError("Айди проекта и айди проекта группы не совпадают")
+
+            let [users] = await sql.query('SELECT * FROM users WHERE id = ?', [session.userId])
+
+            /**
+             * @type {User}
+             */
+            let user = users[0]
+
+            if(user.id !== project.userId)
+                throw new ApiError("Вы не владелец проекта")
+
+            let [queries] = await sql.query('SELECT * FROM queries WHERE groupId = ? LIMIT ?, ?', [groupId, page, 25 ])
+
+            return res.send({successful: true, data: queries})
+        }
+        else
+            throw new ApiError("Сессии не существует")
+    }
+    catch (e){
+        return next(e)
+    }
+})
+
+router.get('/getGroups', async (req, res, next) => {
+    let secret = req.query['c']
+    let projectId = Number(req.query['projectId'])
+
+    try {
+        let [sessions] = await sql.query('SELECT * FROM sessions WHERE secret = ?', [secret])
+
+        if (sessions.length) {
+            let session = sessions[0]
+
+
+            let [projects] = await sql.query('SELECT * FROM projects WHERE id = ?', [projectId])
+
+            if(!projects.length)
+                throw new ApiError("Проекта не существует")
+
+            /**
+             * @type {Project}
+             */
+            let project = projects[0]
+
+            let [users] = await sql.query('SELECT * FROM users WHERE id = ?', [session.userId])
+
+            /**
+             * @type {User}
+             */
+            let user = users[0]
+
+            if(user.id !== project.userId)
+                throw new ApiError("Вы не владелец проекта")
+
+            let [groups] = await sql.query('SELECT * FROM _groups WHERE projectId = ?', [projectId])
+
+            return res.send({successful: true, data: groups})
+        }
+        else
+            throw new ApiError("Сессии не существует")
+    }
+    catch (e){
+        return next(e)
+    }
+})
+
+router.get('/getProject', async (req, res, next) => {
+    let secret = req.query['c']
+    let projectId = Number(req.query['projectId'])
+
+    try {
+        let [sessions] = await sql.query('SELECT * FROM sessions WHERE secret = ?', [secret])
+
+        if (sessions.length) {
+            /**
+             * @type {UserSession}
+             */
+            let session = sessions[0]
+
+            let [projects] = await sql.query('SELECT * FROM projects WHERE id = ?', [projectId])
+
+            if(!projects.length)
+                throw new ApiError("Проекта не существует")
+            /**
+             * @type {Project}
+             */
+            let project = projects[0]
+
+            if(project.userId !== session.userId)
+                throw new ApiError("Вы не владелец проекта")
+
+
+            return res.send({successful: true, data: project})
+        }
+        else
+            throw new ApiError("Сессии не существует")
+    }
+    catch (e){
+        return next(e)
+    }
+})
+
+router.get('/getSettings', async (req, res, next) => {
     let programHash = req.query['p']
-    //let city = req.query['city']
 
     try {
         let [users] = await sql.query('SELECT * FROM users WHERE programHash = ?', [programHash])
@@ -669,21 +734,329 @@ router.get('/getTask', async (req, res) => {
             /**
              * @type {User}
              */
-            //let user = users[0]
+            let user = users[0]
+
+            return res.send({
+                successful: true,
+                data: {
+                    loadLimit: user.loadLimit,
+                    maxResourceLimit: user.maxResourceLimit
+                }
+            })
+        } else
+            throw new ApiError("Неверный программный хэш")
+    }
+    catch (e) {
+        return next(e)
+    }
+})
+
+router.get('/getPositions', async (req, res, next) => {
+    let secret = req.query['c']
+    let page = (Number(req.query['p']) || 0)  * PAGE_COUNT
+    let groupId = Number(req.query['groupId'] || 0)
+    let projectId = Number(req.query['projectId'])
+    let city = req.query['city']
+    let engine = req.query['engine']
+
+    try {
+        let [sessions] = await sql.query('SELECT * FROM sessions WHERE secret = ?', [secret])
+
+        if (sessions.length) {
+            let session = sessions[0]
+
+            let groups, group
+            if(groupId !== 0) {
+                [groups] = await sql.query('SELECT * FROM _groups WHERE id = ?', [groupId])
+
+                if (!groups.length)
+                    throw new ApiError("Группы не существует")
+
+                /**
+                 * @type {Group}
+                 */
+                group = groups[0]
+            }
+
+            let [projects] = await sql.query('SELECT * FROM projects WHERE id = ?', [projectId])
+
+            if(!projects.length)
+                throw new ApiError("Проекта не существует")
+
+            /**
+             * @type {Project}
+             */
+            let project = projects[0]
+
+            if(groupId !== 0 && group.projectId !== projectId)
+                throw new ApiError("Айди проекта и айди проекта группы не совпадают")
+
+            let [users] = await sql.query('SELECT * FROM users WHERE id = ?', [session.userId])
+
+            /**
+             * @type {User}
+             */
+            let user = users[0]
+
+            if(user.id !== project.userId)
+                throw new ApiError("Вы не владелец проекта")
 
 
+            let positions;
+
+            if(groupId === 0)
+                [positions] = await sql.query('SELECT * FROM results WHERE projectId = ? AND cityCollection = ? AND engineCollection = ? LIMIT ?, ?',
+                    [projectId, city, engine, page, page + 25 ])
+            else
+                [positions] = await sql.query('SELECT * FROM results WHERE groupId = ? AND projectId = ? AND cityCollection = ? AND engineCollection = ? LIMIT ?, ?',
+                    [groupId, projectId, city, engine, page, page + 25 ])
+
+            return res.send({successful: true, data: positions})
+        }
+        else
+            throw new ApiError("Сессии не существует")
+    }
+    catch (e){
+        return next(e)
+    }
+})
+
+router.get('/getTask', async (req, res, next) => {
+    let programHash = req.query['p']
+    let city = req.query['city']
+
+    try {
+        let [users] = await sql.query('SELECT * FROM users WHERE programHash = ?', [programHash])
+
+        if (users.length) {
+            /**
+             * @type {User}
+             */
+
+            let [tasks] = await sql.query(`SELECT * FROM tasks 
+              WHERE executing = FALSE 
+              AND ? IN (SELECT cityName FROM cities WHERE cities.projectId = tasks.projectId
+              AND TIMEDIFF(tasks.parsingTime, CURRENT_TIME) <= 0 ) 
+              LIMIT 1`,
+              [city])
+
+            /**
+             * @type {Task}
+             */
+            let task = tasks[0]
+
+            await sql.query(`UPDATE tasks SET executing = TRUE, city = ? WHERE id = ?`, [city, task.id])
+            await sql.query(`CREATE EVENT set_not_executing${Date.now().toString()}
+                                    ON SCHEDULE AT CURRENT_TIMESTAMP + INTERVAL 10 MINUTE
+                                    ON COMPLETION NOT PRESERVE
+                                    DO
+                                      UPDATE tasks SET executing = FALSE WHERE id = ?`, [task.id])
+
+            return res.send({successful: true, data: task})
+        }
+        else
+            throw new ApiError("Неверный программный хэш")
+    }
+    catch (e) {
+        return next(e)
+    }
+})
+
+router.get('/endTask', async (req, res, next) => {
+    let programHash = req.query['p']
+    let place = Number(req.query['place'])
+    let taskId = req.query['task']
+
+    try {
+        let [users] = await sql.query('SELECT * FROM users WHERE programHash = ?', [programHash])
+
+        if (users.length) {
+            /**
+             * @type {User}
+             */
+            let user = users[0]
+
+            let [tasks] = await sql.query(`SELECT * FROM tasks WHERE id = ?`,
+                [taskId])
+
+            if(!tasks.length)
+                throw new ApiError("Задачи не существует")
+
+            /**
+             * @type {Task}
+             */
+            let task = tasks[0]
+
+            if(!task.executing)
+                throw new ApiError("Неверный айди задачи или превышенно время выполнения")
+
+            await sql.query(`DELETE FROM tasks WHERE id = ?`, [task.id])
+
+            let [queries] = await sql.query(`SELECT * FROM queries WHERE id = ?`, [task.queryId])
+
+            /**
+             * @type {SearchingQuery}
+             */
+            let query = queries[0]
+
+            await sql.query(`INSERT INTO results(queryId, queryText, groupId, projectId, place, lastCollection, cityCollection, engineCollection) 
+                                VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+                [task.queryId,query.queryText, task.groupId, task.projectId, place, new Date(Date.now()).toDateString(), task.city, task.searchingEngine])
+
+            await sql.query(`UPDATE users SET executedTasksForDay = executedTasksForDay + 1 WHERE id = ?`, [user.id])
+
+            return res.send({successful: true})
         }
         else
             throw new ApiError("Неверный программный хэш")
     }
     catch (e){
-        if(!(e instanceof ApiError)) console.log(e)
-
-        return res.send({
-            successful: false,
-            message: e instanceof ApiError ? e.message : "Произошла ошибка на стороне сервера"
-        })
+        return next(e)
     }
+})
+
+router.post('/addProject', async (req, res, next) => {
+    if (!req.body) return res.sendStatus(400);
+
+    let secret = req.body['c']
+
+    /**
+     * @type {ProjectJson}
+     */
+    let project = req.body['project']
+
+    try{
+        let [sessions] = await sql.query('SELECT * FROM sessions WHERE secret = ?', [secret])
+
+        if (sessions.length) {
+            /**
+             * @type {UserSession}
+             */
+            let session = sessions[0]
+
+
+            let [projectResult] = await sql.query(`INSERT INTO projects(userId, siteAddress,
+                                                searchEngine, searchingRange,
+                                                parsingTime, parsingDays)
+                           VALUES (?, ?, ?, ?, ?, ?)`, [
+                session.userId, project.siteAddress,
+                project.searchEngine.join(','),
+                project.searchingRange,
+                project.parsingTime,
+                project.parsingDays.join(',')
+            ])
+
+            for (let i = 0; i < project.cities.length; i++) {
+                let city = project.cities[i]
+
+                await sql.query("INSERT INTO cities(projectId, cityName) VALUES(?, ?)", [projectResult.insertId, city])
+            }
+
+            return res.send({successful: true})
+        }
+        else
+            throw new ApiError("Сессии не существует")
+
+    }
+    catch (e){
+        return next(e)
+    }
+})
+
+router.post('/updateProject', async (req, res, next) => {
+    if(!req.body) return res.sendStatus(400)
+
+    let secret = req.body['c']
+    let projectId = req.body['projectId']
+
+    /**
+     * @type {ProjectJson}
+     */
+    let project = req.body['project']
+
+    try{
+        let [sessions] = await sql.query('SELECT * FROM sessions WHERE secret = ?', [secret])
+
+        if (sessions.length) {
+            /**
+             * @type {UserSession}
+             */
+            let session = sessions[0]
+
+            let [projects] = await sql.query('SELECT * FROM projects WHERE id = ?', [projectId])
+
+            if(!projects.length)
+                throw new ApiError("Проекта не существует")
+            /**
+             * @type {Project}
+             */
+            let _project = projects[0]
+
+            if(_project.userId !== session.userId)
+                throw new ApiError("Вы не владелец проекта")
+
+            await sql.query(`UPDATE projects SET userId = ?, siteAddress = ?,
+                                                searchEngine = ?, searchingRange = ?,
+                                                parsingTime = ?, parsingDays = ? WHERE id = ?`, [
+                session.userId, project.siteAddress,
+                project.searchEngine.join(','),
+                project.searchingRange,
+                project.parsingTime,
+                project.parsingDays.join(','),
+                projectId
+            ])
+
+            await sql.query('DELETE FROM cities WHERE projectId = ?', [projectId])
+
+            for (let i = 0; i < project.cities.length; i++) {
+                let city = project.cities[i]
+
+                await sql.query("INSERT INTO cities(projectId, cityName) VALUES(?, ?)", [projectId, city])
+            }
+
+            return res.send({successful: true})
+        }
+        else
+            throw new ApiError("Сессии не существует")
+    }
+    catch (e)
+    {
+        return next(e)
+    }
+
+})
+
+router.get('/updateSettings', async (req, res, next) => {
+    if(!req.body) return res.sendStatus(400)
+
+    let secret = req.body['c']
+    let loadLimit = req.body['loadLimit']
+    let maxResourceLimit = req.body['maxResourceLimit']
+
+    try{
+        let [sessions] = await sql.query('SELECT * FROM sessions WHERE secret = ?', [secret])
+
+        if (sessions.length) {
+            /**
+             * @type {UserSession}
+             */
+            let session = sessions[0]
+
+            await sql.query(`UPDATE users SET loadLimit = ?, maxResourceLimit = ? WHERE id = ?`, [
+                loadLimit, maxResourceLimit,
+                session.userId
+            ])
+
+            return res.send({successful: true})
+        }
+        else
+            throw new ApiError("Сессии не существует")
+    }
+    catch (e)
+    {
+        return next(e)
+    }
+
 })
 
 module.exports = router

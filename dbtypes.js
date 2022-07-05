@@ -97,3 +97,16 @@
  * cities: String[]
  * }}
  */
+
+/**
+ * @name Task
+ * @type {{
+ *     id: Number,
+ *     projectId: Number,
+ *     groupId: Number,
+ *     queryId: Number,
+ *     executing: Boolean,
+ *     city: String,
+ *     searchingEngine: String
+ * }}
+ */

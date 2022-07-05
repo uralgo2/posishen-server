@@ -1,5 +1,5 @@
 use test;
-drop table users, projects, _groups, queries, cities, results, sessions, expenses; 
+drop table users, projects, _groups, queries, cities, results, sessions, expenses, tasks; 
 
 create table users (
 	id INT AUTO_INCREMENT PRIMARY KEY, -- уникальный индетификатор пользователя
@@ -13,8 +13,8 @@ create table users (
     maxResourceLimit INT DEFAULT 10, -- максимальное использование ресурсов
     loadLimit INT DEFAULT 80,  -- лимит общей нагрузки пк при которой минимизируется работы программы
     accountCreatedAt DATETIME DEFAULT NOW(), -- дата создания аккаунта
-	restoreHash CHAR(128) DEFAULT NULL, -- хэш для востановления пароля
-    programHash CHAR(128) DEFAULT NOT NULL -- хэш для программы
+	restoreHash CHAR(128) DEFAULT '', -- хэш для востановления пароля
+    programHash CHAR(128) NOT NULL -- хэш для программы
 );
 create table projects (
 	id INT AUTO_INCREMENT PRIMARY KEY, -- уникальный индетификаток задачи
@@ -24,10 +24,10 @@ create table projects (
     searchingRange ENUM('100', '200') NOT NULL, -- диапазон парсинга
     parsingTime TIME NOT NULL, -- время парсинга
     parsingDays SET(
-		'monday', 'tuesday', 
-		'wednesday', 'thursday', 
-		'friday', 'saturday', 
-		'sunday'
+		'Monday', 'Tuesday', 
+		'Wednesday', 'Thursday', 
+		'Friday', 'Saturday', 
+		'Sunday'
 	) NOT NULL, -- дни парсинга
     queriesCount INT DEFAULT 0,
     FOREIGN KEY (userId) REFERENCES users (id) ON DELETE CASCADE    
@@ -53,8 +53,14 @@ create table queries (
 create table results (
 	id INT AUTO_INCREMENT PRIMARY KEY,
 	queryId INT NOT NULL,
+    queryText VARCHAR(255) NOT NULL,
+	groupId INT NOT NULL,
+	projectId INT NOT NULL,
     place INT NOT NULL,
     lastCollection DATE NOT NULL,
+    cityCollection VARCHAR(255) NOT NULL,
+    engineCollection ENUM('yandex', 'google') NOT NULL,
+    
     FOREIGN KEY (queryId) REFERENCES queries (id) ON DELETE CASCADE
 );
 create table sessions (
@@ -74,11 +80,14 @@ create table expenses (
 create table tasks (
 	id INT AUTO_INCREMENT PRIMARY KEY,
     projectId INT NOT NULL,
+    groupId INT NOT NULL,
     queryId INT NOT NULL,
-    executed BOOL DEFAULT FALSE, -- выполнен ли этот запрос, если истино то сервер не будет давать это задание
-    -- до следущего парсинга
+    city VARCHAR (255) NOT NULL,
+    searchingEngine ENUM('yandex', 'google') NOT NULL,
+    searchingRange ENUM('100', '200') NOT NULL,
     executing BOOL DEFAULT FALSE, -- выполняется этот запрос, пока истино сервер не будет давать это задание
     -- если через 10 мин оно все еще в состоянии исполнения то, сервер повторо заносит его в список заданий 
     FOREIGN KEY (projectId) REFERENCES projects(id) ON DELETE CASCADE,
-    FOREIGN KEY (queryId) REFERENCES queries(id) ON DELETE CASCADE
+    FOREIGN KEY (queryId) REFERENCES queries(id) ON DELETE CASCADE,
+	FOREIGN KEY (groupId) REFERENCES _groups(id) ON DELETE CASCADE
 );
