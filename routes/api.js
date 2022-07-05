@@ -835,15 +835,18 @@ router.get('/getTask', async (req, res, next) => {
 
             let [tasks] = await sql.query(`SELECT * FROM tasks 
               WHERE executing = FALSE 
-              AND ? IN (SELECT cityName FROM cities WHERE cities.projectId = tasks.projectId
-              AND TIMEDIFF(tasks.parsingTime, CURRENT_TIME) <= 0 ) 
+              AND city = ?
+              AND TIMEDIFF(tasks.parsingTime, CURRENT_TIME) <= 0  
               LIMIT 1`,
               [city])
+
+            if(!tasks.length) throw new ApiError("Нет свободных запросов")
 
             /**
              * @type {Task}
              */
             let task = tasks[0]
+
 
             await sql.query(`UPDATE tasks SET executing = TRUE, city = ? WHERE id = ?`, [city, task.id])
             await sql.query(`CREATE EVENT set_not_executing${Date.now().toString()}
@@ -865,7 +868,7 @@ router.get('/getTask', async (req, res, next) => {
 router.get('/endTask', async (req, res, next) => {
     let programHash = req.query['p']
     let place = Number(req.query['place'])
-    let taskId = req.query['task']
+    let taskId = req.query['taskId']
 
     try {
         let [users] = await sql.query('SELECT * FROM users WHERE programHash = ?', [programHash])
@@ -892,16 +895,9 @@ router.get('/endTask', async (req, res, next) => {
 
             await sql.query(`DELETE FROM tasks WHERE id = ?`, [task.id])
 
-            let [queries] = await sql.query(`SELECT * FROM queries WHERE id = ?`, [task.queryId])
-
-            /**
-             * @type {SearchingQuery}
-             */
-            let query = queries[0]
-
             await sql.query(`INSERT INTO results(queryId, queryText, groupId, projectId, place, lastCollection, cityCollection, engineCollection) 
                                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-                [task.queryId,query.queryText, task.groupId, task.projectId, place, new Date(Date.now()).toDateString(), task.city, task.searchingEngine])
+                [task.queryId,task.queryText, task.groupId, task.projectId, place, new Date(Date.now()).toISOString().slice(0, 10), task.city, task.searchingEngine])
 
             await sql.query(`UPDATE users SET executedTasksForDay = executedTasksForDay + 1 WHERE id = ?`, [user.id])
 

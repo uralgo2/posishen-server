@@ -22,8 +22,8 @@ app.use((req, res, next) => {
   next(createError(404))
 })
 // error handler
-// noinspection JSUnresolvedVariable
-app.use((e, req, res) => {
+// noinspection JSUnresolvedVariable,JSUnusedLocalSymbols
+app.use((e, req, res, next) => {
       if(!(e instanceof ApiError)) console.log(e)
 
       // noinspection JSUnresolvedFunction

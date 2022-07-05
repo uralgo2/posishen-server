@@ -107,6 +107,9 @@
  *     queryId: Number,
  *     executing: Boolean,
  *     city: String,
- *     searchingEngine: String
+ *     searchingEngine: String,
+ *     parsingTime: Date,
+ *     queryText: String,
+ *     siteAddress: String,
  * }}
  */

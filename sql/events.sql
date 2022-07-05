@@ -50,6 +50,8 @@ CREATE EVENT event_task_create
         DECLARE _cityName VARCHAR(255);
         DECLARE _searchingRange ENUM('100', '200');
         DECLARE _parsingTime TIME;
+        DECLARE _queryText VARCHAR(255);
+        DECLARE _siteAddress VARCHAR(255);
 
         SELECT COUNT(*) FROM projects INTO n;
         SET i=0;
@@ -62,6 +64,7 @@ CREATE EVENT event_task_create
 
                 SELECT searchingRange FROM projects WHERE id = _projectId INTO _searchingRange;
                 SELECT parsingTime FROM projects WHERE id = _projectId INTO _parsingTime;
+                SELECT siteAddress FROM projects WHERE id = _projectId INTO _siteAddress;
 
                 SELECT COUNT(*) FROM _groups WHERE _groups.projectId = _projectId INTO jn;
                 SET j=0;
@@ -73,22 +76,24 @@ CREATE EVENT event_task_create
                     WHILE k<kn DO
                         SELECT id FROM queries LIMIT k, 1 INTO _queryId;
 
+                        SELECT queryText FROM queries WHERE id = _queryId INTO _queryText;
+
                         SELECT COUNT(*) FROM cities WHERE cities.projectId = _projectId INTO mn;
                         SET m=0;
                         WHILE m<mn DO
-                        SELECT cityName FROM cities WHERE projectId = _projectId LIMIT m, 1 INTO _cityName;
+                            SELECT cityName FROM cities WHERE projectId = _projectId LIMIT m, 1 INTO _cityName;
 
-                        IF FIND_IN_SET('google', (SELECT searchEngine FROM projects WHERE id = _projectId)) > 0 THEN
-                            INSERT INTO tasks(projectId, groupId, queryId, city, searchingEngine, searchingRange, parsingTime)
-                            VALUES (_projectId, _groupId, _queryId, _cityName, 'google', _searchingRange, _parsingTime);
-                        END IF;
+                            IF FIND_IN_SET('google', (SELECT searchEngine FROM projects WHERE id = _projectId)) > 0 THEN
+                                INSERT INTO tasks(projectId, groupId, queryId, queryText, city, searchingEngine, searchingRange, parsingTime, siteAddress)
+                                VALUES (_projectId, _groupId, _queryId, _queryText, _cityName, 'google', _searchingRange, _parsingTime, _siteAddress);
+                            END IF;
 
-                        IF FIND_IN_SET('yandex', (SELECT searchEngine FROM projects WHERE id = _projectId)) > 0 THEN
-                            INSERT INTO tasks(projectId, groupId, queryId, city, searchingEngine, searchingRange, parsingTime)
-                            VALUES (_projectId, _groupId, _queryId, _cityName, 'yandex', _searchingRange, _parsingTime);
-                        END IF;
+                            IF FIND_IN_SET('yandex', (SELECT searchEngine FROM projects WHERE id = _projectId)) > 0 THEN
+                                INSERT INTO tasks(projectId, groupId, queryId, queryText, city, searchingEngine, searchingRange, parsingTime,siteAddress)
+                                VALUES (_projectId, _groupId, _queryId, _queryText, _cityName, 'yandex', _searchingRange, _parsingTime, _siteAddress);
+                            END IF;
 
-                        SET m = m + 1;
+                            SET m = m + 1;
                         END WHILE;
 
                     SET k = k + 1;

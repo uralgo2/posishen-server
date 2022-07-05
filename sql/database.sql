@@ -82,9 +82,12 @@ create table tasks (
     projectId INT NOT NULL,
     groupId INT NOT NULL,
     queryId INT NOT NULL,
+    queryText VARCHAR(255) NOT NULL,
     city VARCHAR (255) NOT NULL,
     searchingEngine ENUM('yandex', 'google') NOT NULL,
     searchingRange ENUM('100', '200') NOT NULL,
+    parsingTime TIME NOT NULL,
+    siteAddress VARCHAR(255) NOT NULL,
     executing BOOL DEFAULT FALSE, -- выполняется этот запрос, пока истино сервер не будет давать это задание
     -- если через 10 мин оно все еще в состоянии исполнения то, сервер повторо заносит его в список заданий 
     FOREIGN KEY (projectId) REFERENCES projects(id) ON DELETE CASCADE,
