@@ -823,7 +823,6 @@ router.get('/getPositions', async (req, res, next) => {
 
 router.get('/getTask', async (req, res, next) => {
     let programHash = req.query['p']
-    let city = req.query['city']
 
     try {
         let [users] = await sql.query('SELECT * FROM users WHERE programHash = ?', [programHash])
@@ -834,11 +833,9 @@ router.get('/getTask', async (req, res, next) => {
              */
 
             let [tasks] = await sql.query(`SELECT * FROM tasks 
-              WHERE executing = FALSE 
-              AND city = ?
+              WHERE executing = FALSE
               AND TIMEDIFF(tasks.parsingTime, CURRENT_TIME) <= 0  
-              LIMIT 1`,
-              [city])
+              LIMIT 1`)
 
             if(!tasks.length) throw new ApiError("Нет свободных запросов")
 
