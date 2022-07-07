@@ -22,12 +22,13 @@ nodemailer.createTestAccount().then(acc => {
     //if(isProduction())
         transporter = nodemailer.createTransport({
             host: '5.44.40.177',
-            port: 465,
+            port: 25,
             auth: {
                 user: "noreply@pozishen.ru",
                 pass: "bA1jV3aP",
             },
-            secure: true
+            secure: false,
+            tls: { rejectUnauthorized: false }
         })
     /*else
         transporter = nodemailer.createTransport({
@@ -201,7 +202,7 @@ router.get('/restore', async (req, res, next) => {
                                       UPDATE users SET restoreHash = NULL WHERE id = ?`, [user.id])
 
             let info = await transporter.sendMail({
-                from: '"Позишен" <noreply@pozishen.ru>',
+                from: 'noreply@pozishen.ru',
                 to: email,
                 subject: "Восстановление пароля",
                 text: "Если вы не запрашивали восстановление пароля, проигнорируйте письмо",
@@ -210,8 +211,6 @@ router.get('/restore', async (req, res, next) => {
             })
 
             logger.info("Message sent: %s", info.messageId)
-
-            logger.info("Preview URL: %s", nodemailer.getTestMessageUrl(info))
 
             return res.send({successful: true})
         }

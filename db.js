@@ -1,14 +1,15 @@
 const mysql = require("mysql2/promise")
 
-const databaseName = "test"
-const databaseUsername = "root"
-const databaseUserPassword = "19721948Ass%$"
+const databaseName = "pozishen"
+const databaseUsername = "root1"
+const databaseUserPassword = "aP9kO0uK"
 
 let connection = mysql.createConnection({
-    host: "localhost",
+    host: "5.44.40.177",
     user: databaseUsername,
     database: databaseName,
-    password: databaseUserPassword
+    password: databaseUserPassword,
+    port: 3310
 })
 
 module.exports = connection
