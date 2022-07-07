@@ -10,10 +10,11 @@
     "debug": "~2.6.9",
     "express": "^4.16.4",
     "http-errors": "~1.6.3",
+    "log4js": "^6.5.2",
     "morgan": "~1.9.1",
     "mysql2": "^2.3.3",
-    "pug": "2.0.0-beta11",
-    "nodemailer": "^6.7.6"
+    "nodemailer": "^6.7.6",
+    "pug": "2.0.0-beta11"
   },
   "devDependencies": {}
 }

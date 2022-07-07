@@ -2,14 +2,15 @@ let createError = require('http-errors')
 let express = require('express')
 let path = require('path')
 let cookieParser = require('cookie-parser')
-let logger = require('morgan')
+let log4js = require('log4js')
+let logger = log4js.getLogger('pozishen')
 
 let apiRouter = require('./routes/api')
 const {ApiError} = require("./utils");
 
 let app = express()
 
-app.use(logger('dev'))
+app.use(log4js.connectLogger(logger, {level: 'info'}))
 app.use(express.json())
 app.use(express.urlencoded({ extended: false }))
 app.use(cookieParser())
@@ -24,7 +25,7 @@ app.use((req, res, next) => {
 // error handler
 // noinspection JSUnresolvedVariable,JSUnusedLocalSymbols
 app.use((e, req, res, next) => {
-      if(!(e instanceof ApiError)) console.log(e)
+      if(!(e instanceof ApiError)) logger.error(e)
 
       // noinspection JSUnresolvedFunction
     return res.status(500).send({

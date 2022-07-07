@@ -5,13 +5,12 @@ let sql = require('../db')
 let nodemailer = require('nodemailer')
 const {isProduction, ApiError} = require("../utils")
 const PAGE_COUNT = 25
-const fs = require("fs");
-
+const fs = require("fs")
+const logger = require('log4js').getLogger('pozishen');
 (async () => {
     sql = await sql
-    console.log("Успешное подлкючение к серверу MySQL")
+    logger.info("Успешное подлкючение к серверу MySQL")
 })()
-
 
 
 let testAccount
@@ -20,17 +19,17 @@ let transporter
 nodemailer.createTestAccount().then(acc => {
     testAccount = acc
 
-    if(isProduction())
+    //if(isProduction())
         transporter = nodemailer.createTransport({
-            host: 'smtp.gmail.com',
+            host: '5.44.40.177',
             port: 465,
             auth: {
-                user: "",
-                pass: "",
+                user: "noreply@pozishen.ru",
+                pass: "bA1jV3aP",
             },
             secure: true
         })
-    else
+    /*else
         transporter = nodemailer.createTransport({
             host: "smtp.ethereal.email",
             port: 587,
@@ -40,12 +39,12 @@ nodemailer.createTestAccount().then(acc => {
                 pass: testAccount.pass,
             },
         })
-
+    */
     transporter.verify((error) => {
         if (error)
-            console.log(error);
+            logger.error(error);
         else
-            console.log("Почтовый сервер прошел верификацию");
+            logger.info("Почтовый сервер прошел верификацию");
     });
 });
 
@@ -197,6 +196,7 @@ router.get('/restore', async (req, res, next) => {
             await sql.query('UPDATE users SET restoreHash = ? WHERE id = ?', [restoreHash, user.id])
             await sql.query(`CREATE EVENT delete_restore_hash${Date.now().toString()}
                                     ON SCHEDULE AT CURRENT_TIMESTAMP + INTERVAL 8 HOUR
+                                    ON COMPLETION NOT PRESERVE
                                     DO
                                       UPDATE users SET restoreHash = NULL WHERE id = ?`, [user.id])
 
@@ -209,9 +209,9 @@ router.get('/restore', async (req, res, next) => {
                         Перейдите по ссылке, чтобы восстановить пароль</a>`,
             })
 
-            console.log("Message sent: %s", info.messageId)
+            logger.info("Message sent: %s", info.messageId)
 
-            console.log("Preview URL: %s", nodemailer.getTestMessageUrl(info))
+            logger.info("Preview URL: %s", nodemailer.getTestMessageUrl(info))
 
             return res.send({successful: true})
         }
