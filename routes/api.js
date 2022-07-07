@@ -202,10 +202,10 @@ router.get('/restore', async (req, res, next) => {
 
             let info = await transporter.sendMail({
                 from: '"Позишен" <noreply@pozishen.ru>',
-                to: "test@email.com",
+                to: email,
                 subject: "Восстановление пароля",
                 text: "Если вы не запрашивали восстановление пароля, проигнорируйте письмо",
-                html: `<a href='http://localhost:3000/api/restore/check?s=${restoreHash}'>
+                html: `<a href='http://pozishen.ru/api/restore/check?s=${restoreHash}'>
                         Перейдите по ссылке, чтобы восстановить пароль</a>`,
             })
 
