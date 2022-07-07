@@ -365,7 +365,7 @@ router.get('/addQuery', async (req, res, next) => {
                 throw new ApiError("Вы не владелец проекта")
 
             await sql.query("INSERT INTO queries(groupId, queryText) VALUES (?, ?)", [groupId, queryText])
-
+            await sql.query("UPDATE projects SET queriesCount = queriesCount + 1 WHERE id = ?", [projectId])
             return res.send({successful: true})
         }
         else
