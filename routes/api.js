@@ -25,7 +25,7 @@ nodemailer.createTestAccount().then(acc => {
             port: 25,
             auth: {
                 user: "noreply@pozishen.ru",
-                pass: "bA1jV3aP",
+                pass: "xJ7yC2wI",
             },
             secure: false,
             tls: { rejectUnauthorized: false }
