@@ -1097,7 +1097,7 @@ router.get('/getQueriesCount', async(req, res, next) => {
 
             let [queries] = await sql.query('SELECT COUNT(*) FROM queries WHERE groupId = ?', [groupId])
 
-            return res.send({successful: true, data: queries['COUNT(*)']})
+            return res.send({successful: true, data: queries[0]['COUNT(*)']})
         }
         else
             throw new ApiError("Сессии не существует")
