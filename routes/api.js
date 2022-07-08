@@ -3,7 +3,7 @@ let router = express.Router()
 let crypto = require('crypto')
 let sql = require('../db')
 let nodemailer = require('nodemailer')
-const {isProduction, ApiError} = require("../utils")
+const {ApiError} = require("../utils")
 const PAGE_COUNT = 25
 const fs = require("fs")
 const logger = require('log4js').getLogger('pozishen');
@@ -140,7 +140,7 @@ router.get('/getProjects', async (req, res, next) => {
         if (sessions.length) {
             let session = sessions[0]
 
-            let [projects] = await sql.query('SELECT * FROM projects WHERE userId = ?', [session.userId])
+            let [projects] = await sql.query('SELECT * FROM projects WHERE userId = ? ORDER BY id', [session.userId])
 
             return res.send({successful: true, data: projects})
         }
@@ -206,7 +206,7 @@ router.get('/restore', async (req, res, next) => {
                 to: email,
                 subject: "Восстановление пароля",
                 text: "Если вы не запрашивали восстановление пароля, проигнорируйте письмо",
-                html: `<a href='http://pozishen.ru/api/restore/check?s=${restoreHash}'>
+                html: `<a href='https://pozishen.ru/api/restore/check?s=${restoreHash}'>
                         Перейдите по ссылке, чтобы восстановить пароль</a>`,
             })
 
@@ -632,7 +632,7 @@ router.get('/getQueries', async(req, res, next) => {
             if(user.id !== project.userId)
                 throw new ApiError("Вы не владелец проекта")
 
-            let [queries] = await sql.query('SELECT * FROM queries WHERE groupId = ? LIMIT ?, ?', [groupId, page, 25 ])
+            let [queries] = await sql.query('SELECT * FROM queries WHERE groupId = ? ORDER BY id LIMIT ?, ?', [groupId, page, 25 ])
 
             return res.send({successful: true, data: queries})
         }
@@ -675,7 +675,7 @@ router.get('/getGroups', async (req, res, next) => {
             if(user.id !== project.userId)
                 throw new ApiError("Вы не владелец проекта")
 
-            let [groups] = await sql.query('SELECT * FROM _groups WHERE projectId = ?', [projectId])
+            let [groups] = await sql.query('SELECT * FROM _groups WHERE projectId = ? ORDER BY id', [projectId])
 
             return res.send({successful: true, data: groups})
         }
@@ -804,10 +804,10 @@ router.get('/getPositions', async (req, res, next) => {
             let positions;
 
             if(groupId === 0)
-                [positions] = await sql.query('SELECT * FROM results WHERE projectId = ? AND cityCollection = ? AND engineCollection = ? LIMIT ?, ?',
+                [positions] = await sql.query('SELECT * FROM results WHERE projectId = ? AND cityCollection = ? AND engineCollection = ? ORDER BY id LIMIT ?, ?',
                     [projectId, city, engine, page, page + 25 ])
             else
-                [positions] = await sql.query('SELECT * FROM results WHERE groupId = ? AND projectId = ? AND cityCollection = ? AND engineCollection = ? LIMIT ?, ?',
+                [positions] = await sql.query('SELECT * FROM results WHERE groupId = ? AND projectId = ? AND cityCollection = ? AND engineCollection = ? ORDER BY id LIMIT ?, ?',
                     [groupId, projectId, city, engine, page, page + 25 ])
 
             return res.send({successful: true, data: positions})
@@ -844,7 +844,7 @@ router.get('/getTask', async (req, res, next) => {
             let task = tasks[0]
 
 
-            await sql.query(`UPDATE tasks SET executing = TRUE, city = ? WHERE id = ?`, [city, task.id])
+            await sql.query(`UPDATE tasks SET executing = TRUE WHERE id = ?`, [task.id])
             await sql.query(`CREATE EVENT set_not_executing${Date.now().toString()}
                                     ON SCHEDULE AT CURRENT_TIMESTAMP + INTERVAL 10 MINUTE
                                     ON COMPLETION NOT PRESERVE
