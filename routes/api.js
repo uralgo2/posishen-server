@@ -1095,7 +1095,7 @@ router.get('/getQueriesCount', async(req, res, next) => {
             if(user.id !== project.userId)
                 throw new ApiError("Вы не владелец проекта")
 
-            let [queries] = await sql.query('SELECT COUNT(*) FROM queries WHERE groupId = ? LIMIT ?, ?', [groupId, page, 25 ])
+            let [queries] = await sql.query('SELECT COUNT(*) FROM queries WHERE groupId = ?', [groupId])
 
             return res.send({successful: true, data: queries[0]})
         }
