@@ -483,6 +483,9 @@ router.get('/deleteQuery', async (req, res, next) => {
 
             await sql.query("DELETE FROM queries WHERE id = ?", [queryId])
 
+            await sql.query("UPDATE projects SET queriesCount = queriesCount - 1 WHERE id = ?", [projectId])
+            await sql.query("UPDATE _groups SET queriesCount = queriesCount - 1 WHERE id = ?", [groupId])
+
             return res.send({successful: true})
         }
         else
@@ -538,6 +541,8 @@ router.get('/deleteGroup', async (req, res, next) => {
                 throw new ApiError("Вы не владелец проекта")
 
             await sql.query("DELETE FROM _groups WHERE id = ?", [groupId])
+            await sql.query("UPDATE projects SET queriesCount = queriesCount - 1 WHERE id = ?", [projectId])
+            await sql.query("UPDATE _groups SET queriesCount = queriesCount - 1 WHERE id = ?", [groupId])
 
             return res.send({successful: true})
         }
@@ -809,10 +814,10 @@ router.get('/getPositions', async (req, res, next) => {
 
             if(groupId === 0)
                 [positions] = await sql.query('SELECT * FROM results WHERE projectId = ? AND cityCollection = ? AND engineCollection = ? ORDER BY id LIMIT ?, ?',
-                    [projectId, city, engine, page, page + 25 ])
+                    [projectId, city, engine, page, 25 ])
             else
                 [positions] = await sql.query('SELECT * FROM results WHERE groupId = ? AND projectId = ? AND cityCollection = ? AND engineCollection = ? ORDER BY id LIMIT ?, ?',
-                    [groupId, projectId, city, engine, page, page + 25 ])
+                    [groupId, projectId, city, engine, page, 25 ])
 
             return res.send({successful: true, data: positions})
         }
