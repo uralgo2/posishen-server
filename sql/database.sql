@@ -36,6 +36,7 @@ create table _groups (
 	id INT AUTO_INCREMENT PRIMARY KEY,
     projectId INT NOT NULL,
     groupName VARCHAR(255) NOT NULL,
+    queriesCount INT DEFAULT 0,
     FOREIGN KEY (projectId) REFERENCES projects (id) ON DELETE CASCADE
 );
 create table cities (

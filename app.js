@@ -28,7 +28,7 @@ app.use((e, req, res, next) => {
       if(!(e instanceof ApiError)) logger.error(e)
 
       // noinspection JSUnresolvedFunction
-    return res.status(500).send({
+    return res.status(e instanceof ApiError ? 400 : 500).send({
         successful: false,
         message: e instanceof ApiError ? e.message : "Произошла ошибка на стороне сервера"
       })
