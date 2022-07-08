@@ -1051,4 +1051,60 @@ router.get('/updateSettings', async (req, res, next) => {
 
 })
 
+router.get('/getQueriesCount', async(req, res, next) => {
+    let secret = req.query['c']
+    let groupId = Number(req.query['groupId'])
+    let projectId = Number(req.query['projectId'])
+
+    try {
+        let [sessions] = await sql.query('SELECT * FROM sessions WHERE secret = ?', [secret])
+
+        if (sessions.length) {
+            let session = sessions[0]
+
+            let [groups] = await sql.query('SELECT * FROM _groups WHERE id = ?', [groupId])
+
+            if(!groups.length)
+                throw new ApiError("Группы не существует")
+
+            /**
+             * @type {Group}
+             */
+            let group = groups[0]
+
+            let [projects] = await sql.query('SELECT * FROM projects WHERE id = ?', [projectId])
+
+            if(!projects.length)
+                throw new ApiError("Проекта не существует")
+
+            /**
+             * @type {Project}
+             */
+            let project = projects[0]
+
+            if(group.projectId !== projectId)
+                throw new ApiError("Айди проекта и айди проекта группы не совпадают")
+
+            let [users] = await sql.query('SELECT * FROM users WHERE id = ?', [session.userId])
+
+            /**
+             * @type {User}
+             */
+            let user = users[0]
+
+            if(user.id !== project.userId)
+                throw new ApiError("Вы не владелец проекта")
+
+            let [queries] = await sql.query('SELECT COUNT(*) FROM queries WHERE groupId = ? LIMIT ?, ?', [groupId, page, 25 ])
+
+            return res.send({successful: true, data: queries[0]})
+        }
+        else
+            throw new ApiError("Сессии не существует")
+    }
+    catch (e){
+        return next(e)
+    }
+})
+
 module.exports = router
