@@ -12,7 +12,7 @@ const logger = require('log4js').getLogger('pozishen');
     logger.info("Успешное подлкючение к серверу MySQL")
 })()
 
-let config = require('/config')
+let config = require('../config')
 
 logger.debug('running with configuration: %s', JSON.stringify(config))
 

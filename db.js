@@ -1,6 +1,6 @@
 const mysql = require("mysql2/promise")
 
-const config = require('/config')
+const config = require('./config')
 
 let connection = mysql.createConnection({
     host: config.dbHost,
