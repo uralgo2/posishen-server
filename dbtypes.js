@@ -93,7 +93,6 @@
  * searchingRange: "100" | "200",
  * parsingTime: String,
  * parsingDays: Set<String>,
- * groups: GroupJson[],
  * cities: String[]
  * }}
  */

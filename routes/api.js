@@ -12,6 +12,9 @@ const logger = require('log4js').getLogger('pozishen');
     logger.info("Успешное подлкючение к серверу MySQL")
 })()
 
+let config = require('/config')
+
+logger.debug('running with configuration: %s', JSON.stringify(config))
 
 let testAccount
 let transporter
@@ -21,13 +24,13 @@ nodemailer.createTestAccount().then(acc => {
 
     //if(isProduction())
         transporter = nodemailer.createTransport({
-            host: '5.44.40.177',
-            port: 25,
+            host: config.smtpHost,
+            port: config.smtpPort,
             auth: {
-                user: "noreply@pozishen.ru",
-                pass: "xJ7yC2wI",
+                user: config.smtpEmail,
+                pass: config.smtpPassword,
             },
-            secure: false,
+            secure: config.smtpSecure,
             tls: { rejectUnauthorized: false }
         })
     /*else
@@ -202,7 +205,7 @@ router.get('/restore', async (req, res, next) => {
                                       UPDATE users SET restoreHash = NULL WHERE id = ?`, [user.id])
 
             let info = await transporter.sendMail({
-                from: 'noreply@pozishen.ru',
+                from: config.smtpEmail,
                 to: email,
                 subject: "Восстановление пароля",
                 text: "Если вы не запрашивали восстановление пароля, проигнорируйте письмо",
@@ -1099,6 +1102,49 @@ router.get('/getQueriesCount', async(req, res, next) => {
             let [queries] = await sql.query('SELECT COUNT(*) FROM queries WHERE groupId = ?', [groupId])
 
             return res.send({successful: true, data: queries[0]['COUNT(*)']})
+        }
+        else
+            throw new ApiError("Сессии не существует")
+    }
+    catch (e){
+        return next(e)
+    }
+})
+
+router.get('/getCities', async (req, res) => {
+    let secret = req.query['c']
+    let projectId = Number(req.query['projectId'])
+
+    try {
+        let [sessions] = await sql.query('SELECT * FROM sessions WHERE secret = ?', [secret])
+
+        if (sessions.length) {
+            let session = sessions[0]
+
+
+            let [projects] = await sql.query('SELECT * FROM projects WHERE id = ?', [projectId])
+
+            if(!projects.length)
+                throw new ApiError("Проекта не существует")
+
+            /**
+             * @type {Project}
+             */
+            let project = projects[0]
+
+            let [users] = await sql.query('SELECT * FROM users WHERE id = ?', [session.userId])
+
+            /**
+             * @type {User}
+             */
+            let user = users[0]
+
+            if(user.id !== project.userId)
+                throw new ApiError("Вы не владелец проекта")
+
+            let [cities] = await sql.query('SELECT * FROM cities WHERE projectId = ? ORDER BY id', [projectId])
+
+            return res.send({successful: true, data: cities})
         }
         else
             throw new ApiError("Сессии не существует")
