@@ -1235,11 +1235,11 @@ router.get('/getPositionsCount', async (req, res, next) => {
             let count;
 
             if(groupId === 0)
-                [count] = await sql.query('SELECT COUNT(*) FROM results WHERE projectId = ? AND cityCollection = ? AND engineCollection = ? AND DATE(lastCollection) BETWEEN ? AND ? ORDER BY id LIMIT ?, ?',
-                    [projectId, city, engine, from, to, page, 25 ])
+                [count] = await sql.query('SELECT COUNT(*) FROM results WHERE projectId = ? AND cityCollection = ? AND engineCollection = ? AND DATE(lastCollection) BETWEEN ? AND ? ORDER BY id',
+                    [projectId, city, engine, from, to])
             else
-                [count] = await sql.query('SELECT COUNT(*) FROM results WHERE groupId = ? AND projectId = ? AND cityCollection = ? AND engineCollection = ? AND DATE(lastCollection) BETWEEN ? AND ? ORDER BY id LIMIT ?, ?',
-                    [groupId, projectId, city, engine, from, to, page, 25 ])
+                [count] = await sql.query('SELECT COUNT(*) FROM results WHERE groupId = ? AND projectId = ? AND cityCollection = ? AND engineCollection = ? AND DATE(lastCollection) BETWEEN ? AND ? ORDER BY id',
+                    [groupId, projectId, city, engine, from, to])
 
             return res.send({successful: true, data: count[0]['COUNT(*)']})
         }
