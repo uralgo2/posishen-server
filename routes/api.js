@@ -775,8 +775,8 @@ router.get('/getPositions', async (req, res, next) => {
     let projectId = Number(req.query['projectId'])
     let city = req.query['city']
     let engine = req.query['engine']
-    let from = req.query['from']
-    let to = req.query['to']
+    let from = new Date(req.query['from'])
+    let to = new Date(req.query['to'])
 
     try {
         let [sessions] = await sql.query('SELECT * FROM sessions WHERE secret = ?', [secret])
@@ -1136,7 +1136,7 @@ router.get('/getQueriesCount', async(req, res, next) => {
     }
 })
 
-router.get('/getCities', async (req, res) => {
+router.get('/getCities', async (req, res, next) => {
     let secret = req.query['c']
     let projectId = Number(req.query['projectId'])
 
@@ -1185,8 +1185,8 @@ router.get('/getPositionsCount', async (req, res, next) => {
     let projectId = Number(req.query['projectId'])
     let city = req.query['city']
     let engine = req.query['engine']
-    let from = req.query['from']
-    let to = req.query['to']
+    let from = new Date(req.query['from'])
+    let to = new Date(req.query['to'])
 
     try {
         let [sessions] = await sql.query('SELECT * FROM sessions WHERE secret = ?', [secret])
