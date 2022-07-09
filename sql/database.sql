@@ -1,4 +1,4 @@
-use test;
+use pozishen;
 drop table users, projects, _groups, queries, cities, results, sessions, expenses, tasks; 
 
 create table users (
@@ -61,7 +61,7 @@ create table results (
     lastCollection DATE NOT NULL,
     cityCollection VARCHAR(255) NOT NULL,
     engineCollection ENUM('yandex', 'google') NOT NULL,
-    
+    foundAddress VARCHAR(255) NOT NULL,
     FOREIGN KEY (queryId) REFERENCES queries (id) ON DELETE CASCADE
 );
 create table sessions (

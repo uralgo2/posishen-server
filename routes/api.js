@@ -874,6 +874,7 @@ router.get('/endTask', async (req, res, next) => {
     let programHash = req.query['p']
     let place = Number(req.query['place'])
     let taskId = req.query['taskId']
+    let foundAddress = req.query['foundAddress']
 
     try {
         let [users] = await sql.query('SELECT * FROM users WHERE programHash = ?', [programHash])
@@ -900,9 +901,9 @@ router.get('/endTask', async (req, res, next) => {
 
             await sql.query(`DELETE FROM tasks WHERE id = ?`, [task.id])
 
-            await sql.query(`INSERT INTO results(queryId, queryText, groupId, projectId, place, lastCollection, cityCollection, engineCollection) 
-                                VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-                [task.queryId,task.queryText, task.groupId, task.projectId, place, new Date(Date.now()).toISOString().slice(0, 10), task.city, task.searchingEngine])
+            await sql.query(`INSERT INTO results(queryId, queryText, groupId, projectId, place, lastCollection, cityCollection, engineCollection, foundAddress) 
+                                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                [task.queryId,task.queryText, task.groupId, task.projectId, place, new Date(Date.now()).toISOString().slice(0, 10), task.city, task.searchingEngine, foundAddress])
 
             await sql.query(`UPDATE users SET executedTasksForDay = executedTasksForDay + 1 WHERE id = ?`, [user.id])
 
