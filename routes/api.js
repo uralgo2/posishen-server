@@ -963,7 +963,15 @@ router.post('/addProject', async (req, res, next) => {
                 await sql.query("INSERT INTO cities(projectId, cityName) VALUES(?, ?)", [projectResult.insertId, city])
             }
 
-            return res.send({successful: true})
+            return res.send({successful: true, data: {
+                    userId: session.userId,
+                    id: projectResult.insertId,
+                    searchEngine: project.searchEngine.join(','),
+                    searchingRange: project.searchingRange,
+                    parsingTime: project.parsingTime,
+                    parsingDays: project.parsingDays.join(','),
+                    siteAddress: project.siteAddress
+                }})
         }
         else
             throw new ApiError("Сессии не существует")
