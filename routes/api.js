@@ -1181,7 +1181,6 @@ router.get('/getCities', async (req, res) => {
 
 router.get('/getPositionsCount', async (req, res, next) => {
     let secret = req.query['c']
-    let page = (Number(req.query['p']) || 0)  * PAGE_COUNT
     let groupId = Number(req.query['groupId'] || 0)
     let projectId = Number(req.query['projectId'])
     let city = req.query['city']
