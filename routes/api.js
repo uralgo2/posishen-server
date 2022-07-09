@@ -367,10 +367,14 @@ router.get('/addQuery', async (req, res, next) => {
             if(user.id !== project.userId)
                 throw new ApiError("Вы не владелец проекта")
 
-            await sql.query("INSERT INTO queries(groupId, queryText) VALUES (?, ?)", [groupId, queryText])
+            let [info] = await sql.query("INSERT INTO queries(groupId, queryText) VALUES (?, ?)", [groupId, queryText])
             await sql.query("UPDATE projects SET queriesCount = queriesCount + 1 WHERE id = ?", [projectId])
             await sql.query("UPDATE _groups SET queriesCount = queriesCount + 1 WHERE id = ?", [groupId])
-            return res.send({successful: true})
+            return res.send({successful: true, data: {
+                    groupId: groupId,
+                    id: info.insertId,
+                    queryText: queryText
+                }})
         }
         else
             throw new ApiError("Сессии не существует")
@@ -411,9 +415,14 @@ router.get('/addGroup', async (req, res, next) => {
             if(user.id !== project.userId)
                 throw new ApiError("Вы не владелец проекта")
 
-            await sql.query("INSERT INTO _groups(projectId, groupName) VALUES (?, ?)", [projectId, groupName])
+            let [info] = await sql.query("INSERT INTO _groups(projectId, groupName) VALUES (?, ?)", [projectId, groupName])
 
-            return res.send({successful: true})
+            return res.send({successful: true, data: {
+                    projectId: projectId,
+                    id: info.insertId,
+                    groupName: groupName,
+                    queriesCount: 0
+                }})
         }
         else
             throw new ApiError("Сессии не существует")
