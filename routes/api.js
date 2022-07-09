@@ -825,10 +825,10 @@ router.get('/getPositions', async (req, res, next) => {
 
             if(groupId === 0)
                 [positions] = await sql.query('SELECT * FROM results WHERE projectId = ? AND cityCollection = ? AND engineCollection = ? AND DATE(lastCollection) BETWEEN ? AND ? ORDER BY id LIMIT ?, ?',
-                    [projectId, city, engine, from, to, page, 25 ])
+                    [projectId, city, engine, from.toISOString().slice(0, 19).replace('T', ' '), to.toISOString().slice(0, 19).replace('T', ' '), page, 25 ])
             else
                 [positions] = await sql.query('SELECT * FROM results WHERE groupId = ? AND projectId = ? AND cityCollection = ? AND engineCollection = ? AND DATE(lastCollection) BETWEEN ? AND ? ORDER BY id LIMIT ?, ?',
-                    [groupId, projectId, city, engine, from, to, page, 25 ])
+                    [groupId, projectId, city, engine, from.toISOString().slice(0, 19).replace('T', ' '), to.toISOString().slice(0, 19).replace('T', ' '), page, 25 ])
 
             return res.send({successful: true, data: positions})
         }
@@ -1235,10 +1235,10 @@ router.get('/getPositionsCount', async (req, res, next) => {
 
             if(groupId === 0)
                 [count] = await sql.query('SELECT COUNT(*) FROM results WHERE projectId = ? AND cityCollection = ? AND engineCollection = ? AND DATE(lastCollection) BETWEEN ? AND ? ORDER BY id',
-                    [projectId, city, engine, from, to])
+                    [projectId, city, engine, from.toISOString().slice(0, 19).replace('T', ' '), to.toISOString().slice(0, 19).replace('T', ' ')])
             else
                 [count] = await sql.query('SELECT COUNT(*) FROM results WHERE groupId = ? AND projectId = ? AND cityCollection = ? AND engineCollection = ? AND DATE(lastCollection) BETWEEN ? AND ? ORDER BY id',
-                    [groupId, projectId, city, engine, from, to])
+                    [groupId, projectId, city, engine, from.toISOString().slice(0, 19).replace('T', ' '), to.toISOString().slice(0, 19).replace('T', ' ')])
 
             return res.send({successful: true, data: count[0]['COUNT(*)']})
         }
