@@ -58,7 +58,7 @@ create table results (
 	groupId INT NOT NULL,
 	projectId INT NOT NULL,
     place INT NOT NULL,
-    lastCollection DATE NOT NULL,
+    lastCollection DATETIME DEFAULT NOW(),
     cityCollection VARCHAR(255) NOT NULL,
     engineCollection ENUM('yandex', 'google') NOT NULL,
     foundAddress VARCHAR(255) NOT NULL,

@@ -775,6 +775,8 @@ router.get('/getPositions', async (req, res, next) => {
     let projectId = Number(req.query['projectId'])
     let city = req.query['city']
     let engine = req.query['engine']
+    let from = req.query['from']
+    let to = req.query['to']
 
     try {
         let [sessions] = await sql.query('SELECT * FROM sessions WHERE secret = ?', [secret])
@@ -822,11 +824,11 @@ router.get('/getPositions', async (req, res, next) => {
             let positions;
 
             if(groupId === 0)
-                [positions] = await sql.query('SELECT * FROM results WHERE projectId = ? AND cityCollection = ? AND engineCollection = ? ORDER BY id LIMIT ?, ?',
-                    [projectId, city, engine, page, 25 ])
+                [positions] = await sql.query('SELECT * FROM results WHERE projectId = ? AND cityCollection = ? AND engineCollection = ? AND DATE(lastCollection) BETWEEN ? AND ? ORDER BY id LIMIT ?, ?',
+                    [projectId, city, engine, from, to, page, 25 ])
             else
-                [positions] = await sql.query('SELECT * FROM results WHERE groupId = ? AND projectId = ? AND cityCollection = ? AND engineCollection = ? ORDER BY id LIMIT ?, ?',
-                    [groupId, projectId, city, engine, page, 25 ])
+                [positions] = await sql.query('SELECT * FROM results WHERE groupId = ? AND projectId = ? AND cityCollection = ? AND engineCollection = ? AND DATE(lastCollection) BETWEEN ? AND ? ORDER BY id LIMIT ?, ?',
+                    [groupId, projectId, city, engine, from, to, page, 25 ])
 
             return res.send({successful: true, data: positions})
         }
@@ -910,9 +912,9 @@ router.get('/endTask', async (req, res, next) => {
 
             await sql.query(`DELETE FROM tasks WHERE id = ?`, [task.id])
 
-            await sql.query(`INSERT INTO results(queryId, queryText, groupId, projectId, place, lastCollection, cityCollection, engineCollection, foundAddress) 
-                                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-                [task.queryId,task.queryText, task.groupId, task.projectId, place, new Date(Date.now()).toISOString().slice(0, 10), task.city, task.searchingEngine, foundAddress])
+            await sql.query(`INSERT INTO results(queryId, queryText, groupId, projectId, place, cityCollection, engineCollection, foundAddress) 
+                                VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+                [task.queryId,task.queryText, task.groupId, task.projectId, place, task.city, task.searchingEngine, foundAddress])
 
             await sql.query(`UPDATE users SET executedTasksForDay = executedTasksForDay + 1 WHERE id = ?`, [user.id])
 
@@ -1168,6 +1170,78 @@ router.get('/getCities', async (req, res) => {
             let [cities] = await sql.query('SELECT * FROM cities WHERE projectId = ? ORDER BY id', [projectId])
 
             return res.send({successful: true, data: cities})
+        }
+        else
+            throw new ApiError("Сессии не существует")
+    }
+    catch (e){
+        return next(e)
+    }
+})
+
+router.get('/getPositionsCount', async (req, res, next) => {
+    let secret = req.query['c']
+    let page = (Number(req.query['p']) || 0)  * PAGE_COUNT
+    let groupId = Number(req.query['groupId'] || 0)
+    let projectId = Number(req.query['projectId'])
+    let city = req.query['city']
+    let engine = req.query['engine']
+    let from = req.query['from']
+    let to = req.query['to']
+
+    try {
+        let [sessions] = await sql.query('SELECT * FROM sessions WHERE secret = ?', [secret])
+
+        if (sessions.length) {
+            let session = sessions[0]
+
+            let groups, group
+            if(groupId !== 0) {
+                [groups] = await sql.query('SELECT * FROM _groups WHERE id = ?', [groupId])
+
+                if (!groups.length)
+                    throw new ApiError("Группы не существует")
+
+                /**
+                 * @type {Group}
+                 */
+                group = groups[0]
+            }
+
+            let [projects] = await sql.query('SELECT * FROM projects WHERE id = ?', [projectId])
+
+            if(!projects.length)
+                throw new ApiError("Проекта не существует")
+
+            /**
+             * @type {Project}
+             */
+            let project = projects[0]
+
+            if(groupId !== 0 && group.projectId !== projectId)
+                throw new ApiError("Айди проекта и айди проекта группы не совпадают")
+
+            let [users] = await sql.query('SELECT * FROM users WHERE id = ?', [session.userId])
+
+            /**
+             * @type {User}
+             */
+            let user = users[0]
+
+            if(user.id !== project.userId)
+                throw new ApiError("Вы не владелец проекта")
+
+
+            let count;
+
+            if(groupId === 0)
+                [count] = await sql.query('SELECT COUNT(*) FROM results WHERE projectId = ? AND cityCollection = ? AND engineCollection = ? AND DATE(lastCollection) BETWEEN ? AND ? ORDER BY id LIMIT ?, ?',
+                    [projectId, city, engine, from, to, page, 25 ])
+            else
+                [count] = await sql.query('SELECT COUNT(*) FROM results WHERE groupId = ? AND projectId = ? AND cityCollection = ? AND engineCollection = ? AND DATE(lastCollection) BETWEEN ? AND ? ORDER BY id LIMIT ?, ?',
+                    [groupId, projectId, city, engine, from, to, page, 25 ])
+
+            return res.send({successful: true, data: count[0]['COUNT(*)']})
         }
         else
             throw new ApiError("Сессии не существует")
