@@ -246,6 +246,8 @@ router.get('/changePassword', async (req, res, next) => {
 
             let newHash = crypto.createHash("md5").update(user.email + '|' + newPassword).digest("hex")
 
+            if(newHash === user.hashedPassword)
+                throw new ApiError("Новый пароль не может совпадать с текущим")
             await sql.query("UPDATE users SET hashedPassword = ? WHERE id = ?", [newHash, user.id])
 
             return res.send({successful: true})
