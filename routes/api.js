@@ -782,45 +782,6 @@ router.get('/getPositions', async (req, res, next) => {
         let [sessions] = await sql.query('SELECT * FROM sessions WHERE secret = ?', [secret])
 
         if (sessions.length) {
-            let session = sessions[0]
-
-            let groups, group
-            if(groupId !== 0) {
-                [groups] = await sql.query('SELECT * FROM _groups WHERE id = ?', [groupId])
-
-                if (!groups.length)
-                    throw new ApiError("Группы не существует")
-
-                /**
-                 * @type {Group}
-                 */
-                group = groups[0]
-            }
-
-            let [projects] = await sql.query('SELECT * FROM projects WHERE id = ?', [projectId])
-
-            if(!projects.length)
-                throw new ApiError("Проекта не существует")
-
-            /**
-             * @type {Project}
-             */
-            let project = projects[0]
-
-            if(groupId !== 0 && group.projectId !== projectId)
-                throw new ApiError("Айди проекта и айди проекта группы не совпадают")
-
-            let [users] = await sql.query('SELECT * FROM users WHERE id = ?', [session.userId])
-
-            /**
-             * @type {User}
-             */
-            let user = users[0]
-
-            if(user.id !== project.userId)
-                throw new ApiError("Вы не владелец проекта")
-
-
             let positions;
 
             if(groupId === 0)
@@ -1192,45 +1153,6 @@ router.get('/getPositionsCount', async (req, res, next) => {
         let [sessions] = await sql.query('SELECT * FROM sessions WHERE secret = ?', [secret])
 
         if (sessions.length) {
-            let session = sessions[0]
-
-            let groups, group
-            if(groupId !== 0) {
-                [groups] = await sql.query('SELECT * FROM _groups WHERE id = ?', [groupId])
-
-                if (!groups.length)
-                    throw new ApiError("Группы не существует")
-
-                /**
-                 * @type {Group}
-                 */
-                group = groups[0]
-            }
-
-            let [projects] = await sql.query('SELECT * FROM projects WHERE id = ?', [projectId])
-
-            if(!projects.length)
-                throw new ApiError("Проекта не существует")
-
-            /**
-             * @type {Project}
-             */
-            let project = projects[0]
-
-            if(groupId !== 0 && group.projectId !== projectId)
-                throw new ApiError("Айди проекта и айди проекта группы не совпадают")
-
-            let [users] = await sql.query('SELECT * FROM users WHERE id = ?', [session.userId])
-
-            /**
-             * @type {User}
-             */
-            let user = users[0]
-
-            if(user.id !== project.userId)
-                throw new ApiError("Вы не владелец проекта")
-
-
             let count;
 
             if(groupId === 0)
@@ -1265,43 +1187,6 @@ router.get('/getPositionsQuery', async (req, res, next) => {
 
         if (sessions.length) {
             let session = sessions[0]
-
-            let groups, group
-            if(groupId !== 0) {
-                [groups] = await sql.query('SELECT * FROM _groups WHERE id = ?', [groupId])
-
-                if (!groups.length)
-                    throw new ApiError("Группы не существует")
-
-                /**
-                 * @type {Group}
-                 */
-                group = groups[0]
-            }
-
-            let [projects] = await sql.query('SELECT * FROM projects WHERE id = ?', [projectId])
-
-            if(!projects.length)
-                throw new ApiError("Проекта не существует")
-
-            /**
-             * @type {Project}
-             */
-            let project = projects[0]
-
-            if(groupId !== 0 && group.projectId !== projectId)
-                throw new ApiError("Айди проекта и айди проекта группы не совпадают")
-
-            let [users] = await sql.query('SELECT * FROM users WHERE id = ?', [session.userId])
-
-            /**
-             * @type {User}
-             */
-            let user = users[0]
-
-            if(user.id !== project.userId)
-                throw new ApiError("Вы не владелец проекта")
-
 
             let [positions] = await sql.query('SELECT * FROM results WHERE queryId = ? AND projectId = ? AND cityCollection = ? AND engineCollection = ? AND DATE(lastCollection) BETWEEN ? AND ? ORDER BY lastCollection LIMIT ?, ?',
                     [queryId, projectId, city, engine, from.toISOString().slice(0, 19).replace('T', ' '), to.toISOString().slice(0, 19).replace('T', ' '), page, 25 ])
