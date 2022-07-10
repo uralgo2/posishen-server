@@ -824,10 +824,10 @@ router.get('/getPositions', async (req, res, next) => {
             let positions;
 
             if(groupId === 0)
-                [positions] = await sql.query('SELECT * FROM results WHERE projectId = ? AND cityCollection = ? AND engineCollection = ? AND DATE(lastCollection) BETWEEN ? AND ? ORDER BY id LIMIT ?, ?',
+                [positions] = await sql.query('SELECT * FROM results WHERE projectId = ? AND cityCollection = ? AND engineCollection = ? AND DATE(lastCollection) BETWEEN ? AND ? ORDER BY lastCollection LIMIT ?, ?',
                     [projectId, city, engine, from.toISOString().slice(0, 19).replace('T', ' '), to.toISOString().slice(0, 19).replace('T', ' '), page, 25 ])
             else
-                [positions] = await sql.query('SELECT * FROM results WHERE groupId = ? AND projectId = ? AND cityCollection = ? AND engineCollection = ? AND DATE(lastCollection) BETWEEN ? AND ? ORDER BY id LIMIT ?, ?',
+                [positions] = await sql.query('SELECT * FROM results WHERE groupId = ? AND projectId = ? AND cityCollection = ? AND engineCollection = ? AND DATE(lastCollection) BETWEEN ? AND ? ORDER BY lastCollection LIMIT ?, ?',
                     [groupId, projectId, city, engine, from.toISOString().slice(0, 19).replace('T', ' '), to.toISOString().slice(0, 19).replace('T', ' '), page, 25 ])
 
             return res.send({successful: true, data: positions})
