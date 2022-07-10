@@ -5,7 +5,7 @@ create table users (
 	id INT AUTO_INCREMENT PRIMARY KEY, -- уникальный индетификатор пользователя
 	email VARCHAR(255) NOT NULL, 
     hashedPassword CHAR(128) NOT NULL, -- хэш пароля
-	balance INT DEFAULT 10, -- баланс по умолчанию 10 руб. 
+	balance DECIMAL(65, 2) DEFAULT 10, -- баланс по умолчанию 10 руб.
     executedTasksForDay INT DEFAULT 0, -- выполненные задачи за день
 	executedTasksForWeek INT DEFAULT 0, -- выполненные задачи за неделю
     executedTasksForMonth INT DEFAULT 0, -- выполненные задачи за месяц
@@ -74,7 +74,7 @@ create table expenses (
 	id INT AUTO_INCREMENT PRIMARY KEY,
     userId INT NOT NULL,
     date DATE NOT NULL,
-    expense INT NOT NULL,
+    expense DECIMAL(65, 2) NOT NULL,
     FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE
 );
 

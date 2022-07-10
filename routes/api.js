@@ -1250,4 +1250,70 @@ router.get('/getPositionsCount', async (req, res, next) => {
     }
 })
 
+router.get('/getPositionsQuery', async (req, res, next) => {
+    let secret = req.query['c']
+    let page = (Number(req.query['p']) || 0)  * PAGE_COUNT
+    let queryId = Number(req.query['queryId'])
+    let projectId = Number(req.query['projectId'])
+    let city = req.query['city']
+    let engine = req.query['engine']
+    let from = new Date(req.query['from'])
+    let to = new Date(req.query['to'])
+
+    try {
+        let [sessions] = await sql.query('SELECT * FROM sessions WHERE secret = ?', [secret])
+
+        if (sessions.length) {
+            let session = sessions[0]
+
+            let groups, group
+            if(groupId !== 0) {
+                [groups] = await sql.query('SELECT * FROM _groups WHERE id = ?', [groupId])
+
+                if (!groups.length)
+                    throw new ApiError("Группы не существует")
+
+                /**
+                 * @type {Group}
+                 */
+                group = groups[0]
+            }
+
+            let [projects] = await sql.query('SELECT * FROM projects WHERE id = ?', [projectId])
+
+            if(!projects.length)
+                throw new ApiError("Проекта не существует")
+
+            /**
+             * @type {Project}
+             */
+            let project = projects[0]
+
+            if(groupId !== 0 && group.projectId !== projectId)
+                throw new ApiError("Айди проекта и айди проекта группы не совпадают")
+
+            let [users] = await sql.query('SELECT * FROM users WHERE id = ?', [session.userId])
+
+            /**
+             * @type {User}
+             */
+            let user = users[0]
+
+            if(user.id !== project.userId)
+                throw new ApiError("Вы не владелец проекта")
+
+
+            let [positions] = await sql.query('SELECT * FROM results WHERE queryId = ? AND projectId = ? AND cityCollection = ? AND engineCollection = ? AND DATE(lastCollection) BETWEEN ? AND ? ORDER BY lastCollection LIMIT ?, ?',
+                    [queryId, projectId, city, engine, from.toISOString().slice(0, 19).replace('T', ' '), to.toISOString().slice(0, 19).replace('T', ' '), page, 25 ])
+
+            return res.send({successful: true, data: positions})
+        }
+        else
+            throw new ApiError("Сессии не существует")
+    }
+    catch (e){
+        return next(e)
+    }
+})
+
 module.exports = router
