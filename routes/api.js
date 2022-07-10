@@ -617,42 +617,25 @@ router.get('/getQueries', async(req, res, next) => {
         if (sessions.length) {
             let session = sessions[0]
 
-            let [groups] = await sql.query('SELECT * FROM _groups WHERE id = ?', [groupId])
+            if(groupId === 0){
+                let [groups] = await sql.query('SELECT * FROM _groups WHERE projectId = ?', [projectId])
 
-            if(!groups.length)
-                throw new ApiError("Группы не существует")
+                let queries = []
 
-            /**
-             * @type {Group}
-             */
-            let group = groups[0]
+                for(let i = 0; i < groups.length; i++){
+                    let [q] = await sql.query('SELECT * FROM queries WHERE groupId = ? ORDER BY id LIMIT ?, ?', [groups[i].id, page, 25])
+                    queries = queries.concat(q)
+                }
 
-            let [projects] = await sql.query('SELECT * FROM projects WHERE id = ?', [projectId])
+                return res.send({successful: true, data: queries})
+            }
 
-            if(!projects.length)
-                throw new ApiError("Проекта не существует")
 
-            /**
-             * @type {Project}
-             */
-            let project = projects[0]
+            else {
+                let [queries] = await sql.query('SELECT * FROM queries WHERE groupId = ? ORDER BY id LIMIT ?, ?', [groupId, page, 25])
 
-            if(group.projectId !== projectId)
-                throw new ApiError("Айди проекта и айди проекта группы не совпадают")
-
-            let [users] = await sql.query('SELECT * FROM users WHERE id = ?', [session.userId])
-
-            /**
-             * @type {User}
-             */
-            let user = users[0]
-
-            if(user.id !== project.userId)
-                throw new ApiError("Вы не владелец проекта")
-
-            let [queries] = await sql.query('SELECT * FROM queries WHERE groupId = ? ORDER BY id LIMIT ?, ?', [groupId, page, 25 ])
-
-            return res.send({successful: true, data: queries})
+                return res.send({successful: true, data: queries})
+            }
         }
         else
             throw new ApiError("Сессии не существует")
