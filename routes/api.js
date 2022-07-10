@@ -114,7 +114,7 @@ router.get('/logout', async (req, res, next) => {
     let secret = req.query['c']
 
     try {
-        let [sessions] = sql.query('SELECT * FROM sessions WHERE secret = ?', [secret])
+        let [sessions] = await sql.query('SELECT * FROM sessions WHERE secret = ?', [secret])
 
         if (sessions.length) {
             /**
