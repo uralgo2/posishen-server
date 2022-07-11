@@ -1,5 +1,5 @@
 use pozishen;
-drop table users, projects, _groups, queries, cities, results, sessions, expenses, tasks; 
+drop table users, projects, _groups, queries, cities, results, sessions, expenses, tasks, cityNames;
 
 create table users (
 	id INT AUTO_INCREMENT PRIMARY KEY, -- уникальный индетификатор пользователя
@@ -94,4 +94,9 @@ create table tasks (
     FOREIGN KEY (projectId) REFERENCES projects(id) ON DELETE CASCADE,
     FOREIGN KEY (queryId) REFERENCES queries(id) ON DELETE CASCADE,
 	FOREIGN KEY (groupId) REFERENCES _groups(id) ON DELETE CASCADE
+);
+
+create table cityNames (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255) NOT NULL UNIQUE KEY
 );

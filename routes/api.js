@@ -1231,5 +1231,22 @@ router.get('/getExpensesCount', async (req, res, next) => {
     }
 })
 
+router.get('/searchCities', async (req, res, next) => {
+    let secret = req.query['c']
+    let search = req.query['search']
 
+    try {
+        let [sessions] = await sql.query('SELECT * FROM sessions WHERE secret = ?', [secret])
+
+        if (sessions.length) {
+            let [cities] = await sql.query('SELECT name FROM cityNames WHERE name LIKE ?', [search])
+            return res.send({successful: true, data: cities})
+        }
+        else
+            throw new ApiError("Сессии не существует")
+    }
+    catch (e){
+        return next(e)
+    }
+})
 module.exports = router
