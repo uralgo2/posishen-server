@@ -863,7 +863,7 @@ router.get('/endTask', async (req, res, next) => {
                 [task.queryId,task.queryText, task.groupId, task.projectId, place, task.city, task.searchingEngine, foundAddress])
 
             await sql.query(`UPDATE users SET executedTasksForDay = executedTasksForDay + 1 WHERE id = ?`, [user.id])
-
+            await sql.query(`UPDATE projects SET lastCollection = CURRENT_TIMESTAMP WHERE id = ?`, [task.projectId])
             return res.send({successful: true})
         }
         else
