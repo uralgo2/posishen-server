@@ -994,15 +994,13 @@ router.post('/updateProject', async (req, res, next) => {
 })
 
 router.get('/updateSettings', async (req, res, next) => {
-    if(!req.body) return res.sendStatus(400)
-
-    let secret = req.body['c']
-    let loadLimit = req.body['loadLimit']
-    let maxResourceLimit = req.body['maxResourceLimit']
+    let secret = req.query['c']
+    let loadLimit = req.query['loadLimit']
+    let maxResourceLimit = req.query['maxResourceLimit']
 
     try{
         let [sessions] = await sql.query('SELECT * FROM sessions WHERE secret = ?', [secret])
-        console.log(sessions)
+
         if (sessions.length) {
             /**
              * @type {UserSession}
