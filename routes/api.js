@@ -1002,7 +1002,7 @@ router.get('/updateSettings', async (req, res, next) => {
 
     try{
         let [sessions] = await sql.query('SELECT * FROM sessions WHERE secret = ?', [secret])
-
+        console.log(sessions)
         if (sessions.length) {
             /**
              * @type {UserSession}
