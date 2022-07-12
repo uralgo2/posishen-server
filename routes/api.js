@@ -1239,7 +1239,7 @@ router.get('/searchCities', async (req, res, next) => {
         let [sessions] = await sql.query('SELECT * FROM sessions WHERE secret = ?', [secret])
 
         if (sessions.length) {
-            let [cities] = await sql.query("SELECT name FROM cityNames WHERE name LIKE ? LIMIT ?", ['%' + search + '%', count])
+            let [cities] = await sql.query("SELECT name FROM cityNames WHERE name LIKE ? OR name LIKE ? LIMIT ?", [search + '%','%' + search + '%', count])
             return res.send({successful: true, data: cities})
         }
         else
