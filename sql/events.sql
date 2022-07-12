@@ -24,11 +24,11 @@ END |
 
 CREATE EVENT e_monthly
     ON SCHEDULE
-        EVERY 1 DAY
+        EVERY 1 MONTH
     DO
 BEGIN
-UPDATE users SET executedTasksForMonth = 0;
-
+UPDATE users SET executedTasksForMonth = 0,
+                 SET lastMonthExpense = 0;
 END |
 
 CREATE EVENT event_task_create

@@ -1,11 +1,12 @@
 use pozishen;
+
 drop table users, projects, _groups, queries, cities, results, sessions, expenses, tasks, cityNames;
 
 create table users (
 	id INT AUTO_INCREMENT PRIMARY KEY, -- уникальный индетификатор пользователя
 	email VARCHAR(255) NOT NULL, 
     hashedPassword CHAR(128) NOT NULL, -- хэш пароля
-	balance DECIMAL(65, 2) DEFAULT 10, -- баланс по умолчанию 10 руб.
+	balance DECIMAL(65, 4) DEFAULT 10, -- баланс по умолчанию 10 руб.
     executedTasksForDay INT DEFAULT 0, -- выполненные задачи за день
 	executedTasksForWeek INT DEFAULT 0, -- выполненные задачи за неделю
     executedTasksForMonth INT DEFAULT 0, -- выполненные задачи за месяц
@@ -14,7 +15,9 @@ create table users (
     loadLimit INT DEFAULT 80,  -- лимит общей нагрузки пк при которой минимизируется работы программы
     accountCreatedAt DATETIME DEFAULT NOW(), -- дата создания аккаунта
 	restoreHash CHAR(128) DEFAULT '', -- хэш для востановления пароля
-    programHash CHAR(128) NOT NULL -- хэш для программы
+    programHash CHAR(128) NOT NULL, -- хэш для программы
+    lastMonthExpense DECIMAL(65, 4) DEFAULT 0,
+    programInstalled BOOL DEFAULT FALSE
 );
 create table projects (
 	id INT AUTO_INCREMENT PRIMARY KEY, -- уникальный индетификаток задачи
@@ -30,6 +33,7 @@ create table projects (
 		'Sunday'
 	) NOT NULL, -- дни парсинга
     queriesCount INT DEFAULT 0,
+    lastCollection DATETIME DEFAULT NOW(),
     FOREIGN KEY (userId) REFERENCES users (id) ON DELETE CASCADE    
 );
 create table _groups (
@@ -74,7 +78,8 @@ create table expenses (
 	id INT AUTO_INCREMENT PRIMARY KEY,
     userId INT NOT NULL,
     date DATE NOT NULL,
-    expense DECIMAL(65, 2) NOT NULL,
+    projectId INT NOT NULL,
+    expense DECIMAL(65, 4) NOT NULL,
     FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE
 );
 

@@ -7,7 +7,6 @@ let logger = log4js.getLogger('pozishen')
 
 let apiRouter = require('./routes/api')
 const {ApiError} = require("./utils");
-
 let app = express()
 
 app.use(log4js.connectLogger(logger, {level: 'info'}))
@@ -16,7 +15,15 @@ app.use(express.urlencoded({ extended: false }))
 app.use(cookieParser())
 app.use(express.static(path.join(__dirname, 'public')))
 
+app.all('/api/*', function(req, res, next) {
+    res.header("Access-Control-Allow-Origin", "*");
+    res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+    res.header("Access-Control-Allow-Methods: GET, PUT, POST")
+    next();
+});
+
 app.use('/api', apiRouter)
+
 
 // catch 404 and forward to error handler
 app.use((req, res, next) => {

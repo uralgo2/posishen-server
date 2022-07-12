@@ -1,9 +1,9 @@
 module.exports = {
-    dbName: '',
-    dbUsername: '',
-    dbPort: 0,
-    dbPassword: '',
-    dbHost: '',
+    dbName: 'pozishen',
+    dbUsername: 'root',
+    dbPort: 3306,
+    dbPassword: '19721948Ass%$',
+    dbHost: 'localhost',
 
     smtpHost: '',
     smtpPort: '',

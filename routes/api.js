@@ -155,8 +155,9 @@ router.get('/getProjects', async (req, res, next) => {
     }
 })
 
-router.get('/restore/check', async (req, res, next) => {
+router.get('/restoreChange', async (req, res, next) => {
     let hash = req.query['s']
+    let password = req.query['password']
 
     try {
         let [users] = await sql.query('SELECT * FROM users WHERE restoreHash = ?', [hash])
@@ -169,9 +170,10 @@ router.get('/restore/check', async (req, res, next) => {
              */
             let user = users[0]
 
+            let hashedPassword = crypto.createHash("md5").update(user.email + '|' + pasword).digest("hex")
             await sql.query('INSERT INTO sessions(userId, secret) VALUES(?, ?)', [user.id, secret])
 
-            await sql.query('UPDATE users SET restoreHash = NULL WHERE id = ?', [user.id])
+            await sql.query('UPDATE users SET restoreHash = NULL, hashedPassword = ? WHERE id = ?', [hashedPassword, user.id])
 
             return res.send({successful: true, data:{c: secret}})
         }
@@ -209,7 +211,7 @@ router.get('/restore', async (req, res, next) => {
                 to: email,
                 subject: "Восстановление пароля",
                 text: "Если вы не запрашивали восстановление пароля, проигнорируйте письмо",
-                html: `<a href='https://pozishen.ru/api/restore/check?s=${restoreHash}'>
+                html: `<a href='https://pozishen.ru/restore?hash=${restoreHash}'>
                         Перейдите по ссылке, чтобы восстановить пароль</a>`,
             })
 
@@ -864,6 +866,30 @@ router.get('/endTask', async (req, res, next) => {
 
             await sql.query(`UPDATE users SET executedTasksForDay = executedTasksForDay + 1 WHERE id = ?`, [user.id])
             await sql.query(`UPDATE projects SET lastCollection = CURRENT_TIMESTAMP WHERE id = ?`, [task.projectId])
+
+            let [_tasks] = await sql.query('SELECT * FROM tasks WHERE queryId = ?', [task.queryId])
+            if(!_tasks.length){
+                let [users] = await sql.query('SELECT userId FROM pozishen.projects WHERE id = ?', [task.projectId])
+                let [_users] = await sql.query('SELECT lastMonthExpense, programInstalled FROM pozishen.users WHERE id = ?', [users[0].userId])
+
+                let price = 0.05
+                let user = _users[0]
+                if(user.programInstalled){
+                    if(user.lastMonthExpense <= 300)
+                        price = 0.02
+                    else if(user.lastMonthExpense <= 500)
+                        price = 0.019
+                    else if(user.lastMonthExpense <= 1000)
+                        price = 0.018
+                    else if(user.lastMonthExpense <= 3000)
+                        price = 0.017
+                    else if(user.lastMonthExpense <= 10000)
+                        price = 0.016
+                    else
+                        price = 0.015
+                }
+                await sql.query('UPDATE users SET lastMonthExpense = lastMonthExpense + ?, balance = balance - ? WHERE id = ?', [price, price, users[0].userId])
+            }
             return res.send({successful: true})
         }
         else
