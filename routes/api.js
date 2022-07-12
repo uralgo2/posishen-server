@@ -170,7 +170,7 @@ router.get('/restoreChange', async (req, res, next) => {
              */
             let user = users[0]
 
-            let hashedPassword = crypto.createHash("md5").update(user.email + '|' + pasword).digest("hex")
+            let hashedPassword = crypto.createHash("md5").update(user.email + '|' + password).digest("hex")
             await sql.query('INSERT INTO sessions(userId, secret) VALUES(?, ?)', [user.id, secret])
 
             await sql.query('UPDATE users SET restoreHash = NULL, hashedPassword = ? WHERE id = ?', [hashedPassword, user.id])
