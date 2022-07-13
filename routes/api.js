@@ -16,40 +16,22 @@ let config = require('../config')
 
 logger.debug('running with configuration: %s', JSON.stringify(config))
 
-let testAccount
 let transporter
-
-nodemailer.createTestAccount().then(acc => {
-    testAccount = acc
-
-    //if(isProduction())
-        transporter = nodemailer.createTransport({
-            host: config.smtpHost,
-            port: config.smtpPort,
-            auth: {
-                user: config.smtpEmail,
-                pass: config.smtpPassword,
-            },
-            secure: config.smtpSecure,
-            tls: { rejectUnauthorized: false }
-        })
-    /*else
-        transporter = nodemailer.createTransport({
-            host: "smtp.ethereal.email",
-            port: 587,
-            secure: false,
-            auth: {
-                user: testAccount.user,
-                pass: testAccount.pass,
-            },
-        })
-    */
-    transporter.verify((error) => {
-        if (error)
-            logger.error(error);
-        else
-            logger.info("Почтовый сервер прошел верификацию");
-    });
+transporter = nodemailer.createTransport({
+    host: config.smtpHost,
+    port: config.smtpPort,
+    auth: {
+        user: config.smtpEmail,
+        pass: config.smtpPassword,
+    },
+    secure: config.smtpSecure,
+    tls: { rejectUnauthorized: false }
+})
+transporter.verify((error) => {
+    if (error)
+        logger.error(error);
+    else
+        logger.info("Почтовый сервер прошел верификацию");
 });
 
 router.get('/signup', async (req, res, next) => {
