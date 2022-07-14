@@ -1259,4 +1259,26 @@ router.get('/searchCities', async (req, res, next) => {
         return next(e)
     }
 })
+
+router.get('/collect', async (req, res) => {
+    let secret = req.query['c']
+    let projectId = Number(req.query['projectId'])
+    try {
+        let [sessions] = await sql.query('SELECT * FROM sessions WHERE secret = ?', [secret])
+
+        if (sessions.length) {
+            let [projects] = await sql.query('SELECT * FROM projects WHERE id = ?', [projectId])
+
+            if(!projects.length) throw new ApiError('Проекта не существует')
+            await sql.query('CALL collect(?)', [projectId])
+
+            return res.send({successful: true})
+        }
+        else
+            throw new ApiError("Сессии не существует")
+    }
+    catch (e){
+        return next(e)
+    }
+})
 module.exports = router
