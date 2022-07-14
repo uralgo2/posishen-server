@@ -278,7 +278,7 @@ router.get('/getMe', async (req, res, next) => {
 })
 
 router.get('/getClient', async (req, res) => {
-    res.download(`${__dirname}/../files/pozishen_client.exe`)
+    res.download(`${__dirname}/../files/client.exe`)
 })
 
 router.get('/getConfig', async (req, res, next) => {
