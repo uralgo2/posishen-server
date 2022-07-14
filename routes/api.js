@@ -1167,7 +1167,6 @@ router.get('/getPositionsCount', async (req, res, next) => {
 
 router.get('/getPositionsQuery', async (req, res, next) => {
     let secret = req.query['c']
-    let page = (Number(req.query['p']) || 0)  * PAGE_COUNT
     let queryId = Number(req.query['queryId'])
     let projectId = Number(req.query['projectId'])
     let city = req.query['city']
@@ -1179,10 +1178,9 @@ router.get('/getPositionsQuery', async (req, res, next) => {
         let [sessions] = await sql.query('SELECT * FROM sessions WHERE secret = ?', [secret])
 
         if (sessions.length) {
-            let session = sessions[0]
 
-            let [positions] = await sql.query('SELECT * FROM results WHERE queryId = ? AND projectId = ? AND cityCollection = ? AND engineCollection = ? AND DATE(lastCollection) BETWEEN ? AND ? ORDER BY lastCollection LIMIT ?, ?',
-                    [queryId, projectId, city, engine, from.toISOString().slice(0, 19).replace('T', ' '), to.toISOString().slice(0, 19).replace('T', ' '), page, 25 ])
+            let [positions] = await sql.query('SELECT * FROM results WHERE queryId = ? AND projectId = ? AND cityCollection = ? AND engineCollection = ? AND DATE(lastCollection) BETWEEN ? AND ? ORDER BY lastCollection',
+                    [queryId, projectId, city, engine, from.toISOString().slice(0, 19).replace('T', ' '), to.toISOString().slice(0, 19).replace('T', ' ')])
 
             return res.send({successful: true, data: positions})
         }
