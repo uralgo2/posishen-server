@@ -926,7 +926,9 @@ router.post('/addProject', async (req, res, next) => {
                     searchingRange: project.searchingRange,
                     parsingTime: project.parsingTime,
                     parsingDays: project.parsingDays.join(','),
-                    siteAddress: project.siteAddress
+                    siteAddress: project.siteAddress,
+                    lastCollection: project.lastCollection,
+                    queriesCount: 0
                 }})
         }
         else
