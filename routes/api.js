@@ -14,7 +14,7 @@ const logger = require('log4js').getLogger('pozishen');
 
 let config = require('../config')
 
-logger.debug('running with configuration: %s', JSON.stringify(config))
+logger.info('running with configuration: %s', JSON.stringify(config))
 
 let transporter
 transporter = nodemailer.createTransport({
