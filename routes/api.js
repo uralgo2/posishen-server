@@ -193,7 +193,7 @@ router.get('/restore', async (req, res, next) => {
                 to: email,
                 subject: "Восстановление пароля",
                 text: "Если вы не запрашивали восстановление пароля, проигнорируйте письмо",
-                html: `<a href='https://pozishen.ru/restore?hash=${restoreHash}'>
+                html: `<a href='https://pozishen.ru/restore.html?hash=${restoreHash}'>
                         Перейдите по ссылке, чтобы восстановить пароль</a>`,
             })
 
