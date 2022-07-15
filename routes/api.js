@@ -851,8 +851,8 @@ router.get('/endTask', async (req, res, next) => {
 
             let [_tasks] = await sql.query('SELECT * FROM tasks WHERE queryId = ?', [task.queryId])
             if(!_tasks.length){
-                let [users] = await sql.query('SELECT userId FROM pozishen.projects WHERE id = ?', [task.projectId])
-                let [_users] = await sql.query('SELECT lastMonthExpense, programInstalled FROM pozishen.users WHERE id = ?', [users[0].userId])
+                let [users] = await sql.query('SELECT userId FROM projects WHERE id = ?', [task.projectId])
+                let [_users] = await sql.query('SELECT * FROM pozishen.users WHERE id = ?', [users[0].userId])
 
                 let price = 0.05
                 let user = _users[0]
