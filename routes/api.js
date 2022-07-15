@@ -43,11 +43,11 @@ router.get('/signup', async (req, res, next) => {
         let [users] = await sql.query('SELECT * FROM users WHERE email = ?', [email])
 
         if (!users.length) {
-            let hash = crypto.createHash("md5").update(email + '|' + password).digest("hex")
-            let programHash = crypto.createHash("md5").update(Date.now().toString()).digest("hex")
+            let hash = crypto.createHash("sha256").update(email + '|' + password).digest("hex")
+            let programHash = crypto.createHash("sha256").update(Date.now().toString()).digest("hex")
             let [result] = await sql.query('INSERT INTO users(email, hashedPassword, programHash) VALUES(?, ?, ?)', [email, hash, programHash])
 
-            let secret = crypto.createHash("md5").update(Date.now().toString()).digest("hex")
+            let secret = crypto.createHash("sha256").update(Date.now().toString()).digest("hex")
 
             await sql.query('INSERT INTO sessions(userId, secret) VALUES(?, ?)', [result.insertId, secret])
 
@@ -72,12 +72,12 @@ router.get('/login', async (req, res, next) => {
              */
             let user = users[0]
 
-            let hash = crypto.createHash("md5").update(email + '|' + password).digest("hex")
+            let hash = crypto.createHash("sha256").update(email + '|' + password).digest("hex")
 
             if (user.hashedPassword !== hash)
                 throw new ApiError("Неверный адрес электронной почты или пароль")
             else {
-                let secret = crypto.createHash("md5").update(Date.now().toString()).digest("hex")
+                let secret = crypto.createHash("sha256").update(Date.now().toString()).digest("hex")
 
                 sql.query(`INSERT INTO sessions(userId, secret) VALUES(?, ?)`, [user.id, secret])
 
@@ -145,14 +145,14 @@ router.get('/restoreChange', async (req, res, next) => {
         let [users] = await sql.query('SELECT * FROM users WHERE restoreHash = ?', [hash])
 
         if (users.length) {
-            let secret = crypto.createHash("md5").update(Date.now().toString()).digest("hex")
+            let secret = crypto.createHash("sha256").update(Date.now().toString()).digest("hex")
 
             /**
              * @type {User}
              */
             let user = users[0]
 
-            let hashedPassword = crypto.createHash("md5").update(user.email + '|' + password).digest("hex")
+            let hashedPassword = crypto.createHash("sha256").update(user.email + '|' + password).digest("hex")
             await sql.query('INSERT INTO sessions(userId, secret) VALUES(?, ?)', [user.id, secret])
 
             await sql.query('UPDATE users SET restoreHash = NULL, hashedPassword = ? WHERE id = ?', [hashedPassword, user.id])
@@ -175,7 +175,7 @@ router.get('/restore', async (req, res, next) => {
 
         if (!users.length) throw new ApiError("Пользователя с таким адресом электронной почты не существует")
         else {
-            let restoreHash = crypto.createHash("md5").update(Date.now().toString()).digest("hex")
+            let restoreHash = crypto.createHash("sha256").update(Date.now().toString()).digest("hex")
             /**
              * @type {User}
              */
@@ -224,11 +224,11 @@ router.get('/changePassword', async (req, res, next) => {
 
             let user = users[0]
 
-            let hash = crypto.createHash("md5").update(user.email + '|' + currentPassword).digest("hex")
+            let hash = crypto.createHash("sha256").update(user.email + '|' + currentPassword).digest("hex")
 
             if (user.hashedPassword !== hash) throw new ApiError("Неверный пароль")
 
-            let newHash = crypto.createHash("md5").update(user.email + '|' + newPassword).digest("hex")
+            let newHash = crypto.createHash("sha256").update(user.email + '|' + newPassword).digest("hex")
 
             if(newHash === user.hashedPassword)
                 throw new ApiError("Новый пароль не может совпадать с текущим")
