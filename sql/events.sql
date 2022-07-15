@@ -1,6 +1,10 @@
-use test;
+use pozishen;
 
-delimiter |
+DROP EVENT IF EXISTS e_daily;
+DROP EVENT IF EXISTS e_weekly;
+DROP EVENT IF EXISTS e_monthly;
+DROP  EVENT IF EXISTS event_task_create;
+delimiter //
 
 CREATE EVENT e_daily
     ON SCHEDULE
@@ -10,7 +14,7 @@ BEGIN
 UPDATE users SET executedTasksForWeek = executedTasksForWeek + executedTasksForDay,
                  executedTasksForDay = 0;
 
-END |
+END //
 
 CREATE EVENT e_weekly
     ON SCHEDULE
@@ -20,16 +24,15 @@ BEGIN
 UPDATE users SET executedTasksForMonth = executedTasksForMonth + executedTasksForWeek,
                  executedTasksForWeek = 0;
 
-END |
+END //
 
 CREATE EVENT e_monthly
     ON SCHEDULE
         EVERY 1 MONTH
     DO
 BEGIN
-UPDATE users SET executedTasksForMonth = 0,
-                 SET lastMonthExpense = 0;
-END |
+UPDATE users SET executedTasksForMonth = 0, lastMonthExpense = 0;
+END //
 
 CREATE EVENT event_task_create
     ON SCHEDULE
@@ -69,12 +72,12 @@ CREATE EVENT event_task_create
                 SELECT COUNT(*) FROM _groups WHERE _groups.projectId = _projectId INTO jn;
                 SET j=0;
                 WHILE j<jn DO
-                    SELECT id FROM _groups LIMIT j, 1 INTO _groupId;
+                    SELECT id FROM _groups WHERE projectId = _projectId LIMIT j, 1 INTO _groupId;
 
                     SELECT COUNT(*) FROM queries WHERE queries.groupId = _groupId INTO kn;
                     SET k=0;
                     WHILE k<kn DO
-                        SELECT id FROM queries LIMIT k, 1 INTO _queryId;
+                        SELECT id FROM queries WHERE groupId = _groupId LIMIT k, 1 INTO _queryId;
 
                         SELECT queryText FROM queries WHERE id = _queryId INTO _queryText;
 
@@ -104,5 +107,4 @@ CREATE EVENT event_task_create
             END IF;
             SET i = i + 1;
         END WHILE;
-END |
-delimiter ;
+END //

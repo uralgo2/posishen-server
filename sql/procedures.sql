@@ -27,12 +27,12 @@ BEGIN
                 SELECT COUNT(*) FROM _groups WHERE _groups.projectId = _projectId INTO jn;
                 SET j=0;
                 WHILE j<jn DO
-                        SELECT id FROM _groups LIMIT j, 1 INTO _groupId;
+                        SELECT id FROM _groups WHERE projectId = _projectId LIMIT j, 1 INTO _groupId;
 
                         SELECT COUNT(*) FROM queries WHERE queries.groupId = _groupId INTO kn;
                         SET k=0;
                         WHILE k<kn DO
-                                SELECT id FROM queries LIMIT k, 1 INTO _queryId;
+                                SELECT id FROM queries WHERE groupId = _groupId LIMIT k, 1 INTO _queryId;
 
                                 SELECT queryText FROM queries WHERE id = _queryId INTO _queryText;
 
