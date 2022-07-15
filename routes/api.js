@@ -871,7 +871,7 @@ router.get('/endTask', async (req, res, next) => {
                         price = 0.015
                 }
                 await sql.query('UPDATE users SET lastMonthExpense = lastMonthExpense + ?, balance = balance - ? WHERE id = ?', [price, price, users[0].userId])
-                await sql.query(`INSERT INTO pozishen.expenses (pozishen.expenses.userId, pozishen.expenses.projectId, pozishen.expenses.expense)
+                await sql.query(`INSERT INTO expenses (userId, projectId, expense)
                     VALUES(?, ?, ?) `, [user.id, task.projectId, price])
             }
             return res.send({successful: true})
