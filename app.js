@@ -6,7 +6,13 @@ let log4js = require('log4js')
 let logger = log4js.getLogger('pozishen')
 
 let apiRouter = require('./routes/api')
-const {ApiError} = require("./utils");
+const {ApiError} = require("./utils")
+let config = require('./config');
+
+(async () => {
+    logger.info('running with configuration: %s', JSON.stringify(config))
+})()
+
 let app = express()
 
 app.use(log4js.connectLogger(logger, {level: 'info'}))

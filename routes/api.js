@@ -6,15 +6,8 @@ let nodemailer = require('nodemailer')
 const {ApiError} = require("../utils")
 const PAGE_COUNT = 25
 const fs = require("fs")
-const logger = require('log4js').getLogger('pozishen');
-(async () => {
-    sql = await sql
-    logger.info("Успешное подлкючение к серверу MySQL")
-})()
+const logger = require('log4js').getLogger('pozishen')
 
-let config = require('../config')
-
-logger.info('running with configuration: %s', JSON.stringify(config))
 
 let transporter
 transporter = nodemailer.createTransport({
