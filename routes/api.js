@@ -7,6 +7,7 @@ const {ApiError} = require("../utils")
 const PAGE_COUNT = 25
 const fs = require("fs")
 const config = require("../config");
+const logger = require('log4js').getLogger('pozishen')
 
 let transporter
 transporter = nodemailer.createTransport({
