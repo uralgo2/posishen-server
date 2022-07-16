@@ -396,6 +396,69 @@ router.get('/addQuery', async (req, res, next) => {
     }
 })
 
+router.post('/addQueries', async (req, res, next) => {
+    let secret = req.body['c']
+    let texts = req.body['texts']
+    let groupId = Number(req.body['groupId'])
+    let projectId = Number(req.body['projectId'])
+
+    try {
+        let [sessions] = await sql.query('SELECT * FROM sessions WHERE secret = ?', [secret])
+
+        if (sessions.length) {
+            let session = sessions[0]
+
+            let [groups] = await sql.query('SELECT * FROM _groups WHERE id = ?', [groupId])
+
+            if(!groups.length)
+                throw new ApiError("Группы не существует")
+
+            /**
+             * @type {Group}
+             */
+            let group = groups[0]
+
+            let [projects] = await sql.query('SELECT * FROM projects WHERE id = ?', [projectId])
+
+            if(!projects.length)
+                throw new ApiError("Проекта не существует")
+
+            /**
+             * @type {Project}
+             */
+            let project = projects[0]
+
+            if(group.projectId !== projectId)
+                throw new ApiError("Айди проекта и айди проекта группы не совпадают")
+
+            let [users] = await sql.query('SELECT * FROM users WHERE id = ?', [session.userId])
+
+            /**
+             * @type {User}
+             */
+            let user = users[0]
+
+            if(user.id !== project.userId)
+                throw new ApiError("Вы не владелец проекта")
+
+            let infos = []
+            for(let q of texts){
+                let [info] = await sql.query("INSERT INTO queries(groupId, queryText) VALUES (?, ?)", [groupId, queryText])
+                infos.push({id:info.insertId})
+            }
+
+            await sql.query("UPDATE projects SET queriesCount = queriesCount + ? WHERE id = ?", [infos.length, projectId])
+            await sql.query("UPDATE _groups SET queriesCount = queriesCount + ? WHERE id = ?", [infos.length,groupId])
+            return res.send({successful: true, data: infos})
+        }
+        else
+            throw new ApiError("Сессии не существует")
+    }
+    catch (e){
+        return next(e)
+    }
+})
+
 router.get('/addGroup', async (req, res, next) => {
     let secret = req.query['c']
     let groupName = req.query['name']
