@@ -1,7 +1,6 @@
 let express = require('express')
 let router = express.Router()
 let crypto = require('crypto')
-let sql = require('../db')
 let nodemailer = require('nodemailer')
 const {ApiError} = require("../utils")
 const PAGE_COUNT = 25
@@ -11,23 +10,23 @@ const logger = require('log4js').getLogger('pozishen')
 
 const mysql = require("mysql2/promise")
 
-let connection = null
+let sql = null
 
 async function handleDisconnect() {
-    connection = await mysql.createConnection({
+    sql = await mysql.createConnection({
         host: config.dbHost,
         user: config.dbUsername,
         database: config.dbName,
         password: config.dbPassword,
         port: config.dbPort
     })
-    connection.connect((e) => {
+    sql.connect((e) => {
         if(e){
             logger.error("Не удалось подключиться к серверу MySql: %s", e)
             setTimeout(handleDisconnect, 2000)
         }
     })
-    connection.on('error', (e) => {
+    sql.on('error', (e) => {
         logger.error("Ошибка базы данных: %s", e)
         if(e.code === 'PROTOCOL_CONNECTION_LOST')
             handleDisconnect()
@@ -39,8 +38,9 @@ async function handleDisconnect() {
 handleDisconnect().then(()=>logger.info("Успешное подключение к серверу MySql"))
 
 setInterval(()=>{
-    connection.query('SELECT 1')
+    sql.query('SELECT 1')
 }, 10000)
+
 
 let transporter
 transporter = nodemailer.createTransport({
