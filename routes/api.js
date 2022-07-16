@@ -1360,7 +1360,7 @@ router.get('/searchCities', async (req, res, next) => {
     }
 })
 
-router.get('/collect', async (req, res) => {
+router.get('/collect', async (req, res, next) => {
     let secret = req.query['c']
     let projectId = Number(req.query['projectId'])
     try {
