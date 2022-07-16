@@ -1014,6 +1014,12 @@ router.post('/addProject', async (req, res, next) => {
                 project.parsingTime,
                 project.parsingDays.join(',')
             ])
+            await sql.query(`
+                CREATE EVENT e_project_create_tasks_id${projectResult.insertId}
+                ON SCHEDULE EVERY 1 DAY
+                    STARTS CONCAT(DATE(NOW()), ?)
+                DO call collectProject(?);
+            `, [' ' + project.parsingTime, projectResult.insertId])
 
             for (let i = 0; i < project.cities.length; i++) {
                 let city = project.cities[i]
@@ -1084,6 +1090,14 @@ router.post('/updateProject', async (req, res, next) => {
                 project.parsingDays.join(','),
                 projectId
             ])
+
+            await sql.query(`DROP EVENT IF EXIST e_project_create_tasks_id${projectId}`)
+            await sql.query(`
+                CREATE EVENT e_project_create_tasks_id${projectId}
+                ON SCHEDULE EVERY 1 DAY
+                    STARTS CONCAT(DATE(NOW()), ?)
+                DO call collectProject(?);
+            `, [' ' + project.parsingTime, projectId])
 
             await sql.query('DELETE FROM cities WHERE projectId = ?', [projectId])
 

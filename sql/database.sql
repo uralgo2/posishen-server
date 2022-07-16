@@ -33,7 +33,8 @@ create table projects (
 		'Sunday'
 	) NOT NULL, -- дни парсинга
     queriesCount INT DEFAULT 0,
-    lastCollection DATETIME DEFAULT NOW(),
+    lastCollection VARCHAR(255) DEFAULT '-',
+    started BOOLEAN DEFAULT FALSE,
     FOREIGN KEY (userId) REFERENCES users (id) ON DELETE CASCADE    
 );
 create table _groups (
