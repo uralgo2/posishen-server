@@ -4,7 +4,7 @@
  * Module dependencies.
  */
 
-var app = require('../app');
+
 var http = require('http');
 const log4js = require("log4js");
 
@@ -29,7 +29,7 @@ log4js.configure({
     }
     },
 });
-
+var app = require('../app');
 const logger = log4js.getLogger("pozishen");
 /**
  * Get port from environment and store in Express.
