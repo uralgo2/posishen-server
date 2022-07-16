@@ -14,7 +14,7 @@ async function handleDisconnect() {
     })
     connection.connect((e) => {
         if(e){
-            logger.error("Не удалось подключиться к серверу mysql: %s", e)
+            logger.error("Не удалось подключиться к серверу MySql: %s", e)
             setTimeout(handleDisconnect, 2000)
         }
     })
@@ -27,7 +27,7 @@ async function handleDisconnect() {
     })
 }
 
-handleDisconnect()
+handleDisconnect().then(()=>logger.info("Успешное подключение к серверу MySql"))
 
 setInterval(()=>{
     connection.query('SELECT 1')
