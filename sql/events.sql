@@ -66,7 +66,7 @@ CREATE EVENT event_task_create
                 DELETE FROM tasks WHERE projectId = _projectId;
 
                 SELECT searchingRange FROM projects WHERE id = _projectId INTO _searchingRange;
-                SELECT parsingTime FROM projects WHERE id = _projectId INTO _parsingTime;
+                SELECT TIMESTAMP (parsingTime) FROM projects WHERE id = _projectId INTO _parsingTime;
                 SELECT siteAddress FROM projects WHERE id = _projectId INTO _siteAddress;
 
                 SELECT COUNT(*) FROM _groups WHERE _groups.projectId = _projectId INTO jn;

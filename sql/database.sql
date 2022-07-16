@@ -85,6 +85,7 @@ create table expenses (
 
 create table tasks (
 	id INT AUTO_INCREMENT PRIMARY KEY,
+	userId INT NOT NULL,
     projectId INT NOT NULL,
     groupId INT NOT NULL,
     queryId INT NOT NULL,
@@ -92,13 +93,14 @@ create table tasks (
     city VARCHAR (255) NOT NULL,
     searchingEngine ENUM('yandex', 'google') NOT NULL,
     searchingRange ENUM('100', '200') NOT NULL,
-    parsingTime TIME NOT NULL,
+    parsingTime TIMESTAMP NOT NULL,
     siteAddress VARCHAR(255) NOT NULL,
     executing BOOL DEFAULT FALSE, -- выполняется этот запрос, пока истино сервер не будет давать это задание
     -- если через 10 мин оно все еще в состоянии исполнения то, сервер повторо заносит его в список заданий 
     FOREIGN KEY (projectId) REFERENCES projects(id) ON DELETE CASCADE,
     FOREIGN KEY (queryId) REFERENCES queries(id) ON DELETE CASCADE,
-	FOREIGN KEY (groupId) REFERENCES _groups(id) ON DELETE CASCADE
+	FOREIGN KEY (groupId) REFERENCES _groups(id) ON DELETE CASCADE,
+    FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE
 );
 
 create table cityNames (

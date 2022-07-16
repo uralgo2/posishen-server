@@ -806,11 +806,22 @@ router.get('/getTask', async (req, res, next) => {
             /**
              * @type {User}
              */
+            let user = users[0]
 
-            let [tasks] = await sql.query(`SELECT * FROM tasks 
-              WHERE executing = FALSE
-              AND TIMEDIFF(tasks.parsingTime, CURRENT_TIME) <= 0  
-              LIMIT 1`)
+            let [tasks] = await sql.query(`SELECT * FROM tasks
+                                              WHERE executing = FALSE
+                                                AND TIMEDIFF(tasks.parsingTime, CURRENT_TIME) <= 0
+                                                AND userId = ?
+                                              ORDER BY id
+                                              LIMIT 1
+                `, [user.id])
+            if(!tasks.length)
+                [tasks] = await sql.query(`SELECT * FROM tasks 
+                                          WHERE executing = FALSE
+                                          AND TIMEDIFF(tasks.parsingTime, CURRENT_TIME) <= 0
+                                          ORDER BY id
+                                          LIMIT 1
+                                          `)
 
             if(!tasks.length) throw new ApiError("Нет свободных запросов")
 
