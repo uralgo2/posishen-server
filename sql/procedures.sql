@@ -1,4 +1,5 @@
 DROP PROCEDURE IF EXISTS collect;
+DROP PROCEDURE IF EXISTS collectProject;
 delimiter //
 CREATE PROCEDURE collect(IN _id INT)
 BEGIN
@@ -15,15 +16,16 @@ BEGIN
     DECLARE _searchingRange ENUM('100', '200');
     DECLARE _queryText VARCHAR(255);
     DECLARE _siteAddress VARCHAR(255);
+    DECLARE _userId INT DEFAULT 0;
 
             SET _projectId = _id;
 
 
-                DELETE FROM tasks WHERE projectId = _projectId;
+                DELETE FROM tasks WHERE projectId = _projectId AND executing = 0;
 
                 SELECT searchingRange FROM projects WHERE id = _projectId INTO _searchingRange;
                 SELECT siteAddress FROM projects WHERE id = _projectId INTO _siteAddress;
-
+                SELECT userId FROM projects WHERE id = _projectId INTO _userId;
                 SELECT COUNT(*) FROM _groups WHERE _groups.projectId = _projectId INTO jn;
                 SET j=0;
                 WHILE j<jn DO
@@ -42,13 +44,13 @@ BEGIN
                                         SELECT cityName FROM cities WHERE projectId = _projectId LIMIT m, 1 INTO _cityName;
 
                                         IF FIND_IN_SET('google', (SELECT searchEngine FROM projects WHERE id = _projectId)) > 0 THEN
-                                            INSERT INTO tasks(projectId, groupId, queryId, queryText, city, searchingEngine, searchingRange, parsingTime, siteAddress)
-                                            VALUES (_projectId, _groupId, _queryId, _queryText, _cityName, 'google', _searchingRange, NOW(), _siteAddress);
+                                            INSERT INTO tasks(userId, projectId, groupId, queryId, queryText, city, searchingEngine, searchingRange, parsingTime, siteAddress)
+                                            VALUES (_userId,_projectId, _groupId, _queryId, _queryText, _cityName, 'google', _searchingRange, NOW(), _siteAddress);
                                         END IF;
 
                                         IF FIND_IN_SET('yandex', (SELECT searchEngine FROM projects WHERE id = _projectId)) > 0 THEN
-                                            INSERT INTO tasks(projectId, groupId, queryId, queryText, city, searchingEngine, searchingRange, parsingTime,siteAddress)
-                                            VALUES (_projectId, _groupId, _queryId, _queryText, _cityName, 'yandex', _searchingRange, NOW(), _siteAddress);
+                                            INSERT INTO tasks(userId, projectId, groupId, queryId, queryText, city, searchingEngine, searchingRange, parsingTime,siteAddress)
+                                            VALUES (_userId, _projectId, _groupId, _queryId, _queryText, _cityName, 'yandex', _searchingRange, NOW(), _siteAddress);
                                         END IF;
 
                                         SET m = m + 1;
@@ -59,4 +61,11 @@ BEGIN
 
                         SET j = j + 1;
                     END WHILE;
+END//
+
+CREATE PROCEDURE collectProject(_projectId INT)
+BEGIN
+    IF FIND_IN_SET(DAYNAME(CURDATE()), (SELECT parsingDays FROM projects WHERE id = _projectId)) > 0 THEN
+        call collect(_projectId);
+    END IF;
 END//

@@ -873,7 +873,7 @@ router.get('/getTask', async (req, res, next) => {
 
             let [tasks] = await sql.query(`SELECT * FROM tasks
                                               WHERE executing = FALSE
-                                                AND TIMEDIFF(tasks.parsingTime, CURRENT_TIME) <= 0
+                                                AND TIMEDIFF(tasks.parsingTime, CURRENT_TIMESTAMP) <= 0
                                                 AND userId = ?
                                               ORDER BY id
                                               LIMIT 1
@@ -881,7 +881,7 @@ router.get('/getTask', async (req, res, next) => {
             if(!tasks.length)
                 [tasks] = await sql.query(`SELECT * FROM tasks 
                                           WHERE executing = FALSE
-                                          AND TIMEDIFF(tasks.parsingTime, CURRENT_TIME) <= 0
+                                          AND TIMEDIFF(tasks.parsingTime, CURRENT_TIMESTAMP) <= 0
                                           ORDER BY id
                                           LIMIT 1
                                           `)
