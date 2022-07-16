@@ -443,7 +443,7 @@ router.post('/addQueries', async (req, res, next) => {
 
             let infos = []
             for(let q of texts){
-                let [info] = await sql.query("INSERT INTO queries(groupId, queryText) VALUES (?, ?)", [groupId, queryText])
+                let [info] = await sql.query("INSERT INTO queries(groupId, queryText) VALUES (?, ?)", [groupId, q])
                 infos.push({id:info.insertId})
             }
 
