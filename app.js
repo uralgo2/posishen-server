@@ -9,7 +9,7 @@ let apiRouter = require('./routes/api')
 const {ApiError} = require("./utils")
 let config = require('./config');
 
-(async () => {
+(() => {
     logger.info('running with configuration: %s', JSON.stringify(config))
 })()
 
