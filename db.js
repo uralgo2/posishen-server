@@ -4,8 +4,8 @@ const config = require('./config')
 const logger = require('log4js').getLogger('pozishen')
 let connection = null
 
-function handleDisconnect() {
-    connection = mysql.createConnection({
+async function handleDisconnect() {
+    connection = await mysql.createConnection({
         host: config.dbHost,
         user: config.dbUsername,
         database: config.dbName,
