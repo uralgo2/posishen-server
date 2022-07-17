@@ -17,16 +17,48 @@ BEGIN
     DECLARE _queryText VARCHAR(255);
     DECLARE _siteAddress VARCHAR(255);
     DECLARE _userId INT DEFAULT 0;
-
+    DECLARE _price DECIMAL(65, 4) DEFAULT 0.05;
+    DECLARE _programInstalled BOOl DEFAULT FALSE;
+    DECLARE _lastMonthExpense DECIMAL(65, 4) DEFAULT 0;
+    DECLARE _expense DECIMAL(65, 4) DEFAULT 0;
+    Declare _queriesCount INT DEFAULT 0;
             SET _projectId = _id;
 
 
                 DELETE FROM tasks WHERE projectId = _projectId AND executing = 0;
 
-                SELECT searchingRange FROM projects WHERE id = _projectId INTO _searchingRange;
-                SELECT siteAddress FROM projects WHERE id = _projectId INTO _siteAddress;
-                SELECT userId FROM projects WHERE id = _projectId INTO _userId;
+                SELECT searchingRange, siteAddress, userId, queriesCount FROM projects WHERE id = _projectId
+                INTO _searchingRange, _siteAddress, _userId, _queriesCount;
+
                 SELECT COUNT(*) FROM _groups WHERE _groups.projectId = _projectId INTO jn;
+                SELECT programInstalled, lastMonthExpense FROM users WHERE id = _userId INTO _programInstalled, _lastMonthExpense;
+
+                IF _programInstalled = 1 THEN
+                    IF _lastMonthExpense <= 300 THEN
+                        SET _price = 0.02;
+                    ELSEIF _lastMonthExpense <= 500 THEN
+                        SET _price = 0.019;
+                    ELSEIF _lastMonthExpense <= 1000 THEN
+                        SET _price = 0.018;
+                    ELSEIF _lastMonthExpense <= 3000 THEN
+                        SET _price = 0.017;
+                    ELSEIF _lastMonthExpense <= 10000 THEN
+                        SET _price = 0.016;
+                    ELSE
+                        SET _price = 0.015;
+                    END IF;
+                END IF;
+
+                    SET _expense = _price * _queriesCount;
+
+                    UPDATE users
+                    SET lastMonthExpense = lastMonthExpense + _expense,
+                    balance = balance - _expense
+                    WHERE id = _userId;
+
+                    INSERT INTO expenses(userId, projectId, expense)
+                    VALUES (_userId, _projectId, _expense);
+
                 SET j=0;
                 WHILE j<jn DO
                         SELECT id FROM _groups WHERE projectId = _projectId LIMIT j, 1 INTO _groupId;
@@ -69,3 +101,25 @@ BEGIN
         call collect(_projectId);
     END IF;
 END//
+
+/**
+  let price = 0.05
+                let user = _users[0]
+                if(user.programInstalled){
+                    if(user.lastMonthExpense <= 300)
+                        price = 0.02
+                    else if(user.lastMonthExpense <= 500)
+                        price = 0.019
+                    else if(user.lastMonthExpense <= 1000)
+                        price = 0.018
+                    else if(user.lastMonthExpense <= 3000)
+                        price = 0.017
+                    else if(user.lastMonthExpense <= 10000)
+                        price = 0.016
+                    else
+                        price = 0.015
+                }
+                await sql.query('UPDATE users SET lastMonthExpense = lastMonthExpense + ?, balance = balance - ? WHERE id = ?', [price, price, users[0].userId])
+                await sql.query(`INSERT INTO expenses (userId, projectId, expense)
+                    VALUES(?, ?, ?) `, [user.id, task.projectId, price])
+ */

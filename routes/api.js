@@ -984,31 +984,6 @@ router.get('/endTask', async (req, res, next) => {
             await sql.query(`UPDATE users SET executedTasksForDay = executedTasksForDay + 1 WHERE id = ?`, [user.id])
             await sql.query(`UPDATE projects SET lastCollection = CURRENT_TIMESTAMP WHERE id = ?`, [task.projectId])
 
-            let [_tasks] = await sql.query('SELECT * FROM tasks WHERE queryId = ?', [task.queryId])
-            if(!_tasks.length){
-                let [users] = await sql.query('SELECT userId FROM projects WHERE id = ?', [task.projectId])
-                let [_users] = await sql.query('SELECT * FROM pozishen.users WHERE id = ?', [users[0].userId])
-
-                let price = 0.05
-                let user = _users[0]
-                if(user.programInstalled){
-                    if(user.lastMonthExpense <= 300)
-                        price = 0.02
-                    else if(user.lastMonthExpense <= 500)
-                        price = 0.019
-                    else if(user.lastMonthExpense <= 1000)
-                        price = 0.018
-                    else if(user.lastMonthExpense <= 3000)
-                        price = 0.017
-                    else if(user.lastMonthExpense <= 10000)
-                        price = 0.016
-                    else
-                        price = 0.015
-                }
-                await sql.query('UPDATE users SET lastMonthExpense = lastMonthExpense + ?, balance = balance - ? WHERE id = ?', [price, price, users[0].userId])
-                await sql.query(`INSERT INTO expenses (userId, projectId, expense)
-                    VALUES(?, ?, ?) `, [user.id, task.projectId, price])
-            }
             return res.send({successful: true})
         }
         else
@@ -1156,7 +1131,6 @@ router.post('/updateProject', async (req, res, next) => {
 
 router.get('/updateSettings', async (req, res, next) => {
     let secret = req.query['c']
-    let loadLimit = req.query['loadLimit']
     let maxResourceLimit = req.query['maxResourceLimit']
 
     try{
@@ -1168,8 +1142,8 @@ router.get('/updateSettings', async (req, res, next) => {
              */
             let session = sessions[0]
 
-            await sql.query(`UPDATE users SET loadLimit = ?, maxResourceLimit = ? WHERE id = ?`, [
-                loadLimit, maxResourceLimit,
+            await sql.query(`UPDATE users SET maxResourceLimit = ? WHERE id = ?`, [
+                maxResourceLimit,
                 session.userId
             ])
 
