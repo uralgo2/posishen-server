@@ -900,7 +900,7 @@ router.get('/getTask', async (req, res, next) => {
 
 
             await sql.query(`UPDATE tasks SET executing = TRUE WHERE id = ?`, [task.id])
-            await sql.query(`CREATE EVENT set_not_executing${Date.now().toString()}
+            await sql.query(`CREATE EVENT set_not_executing${task.id}
                                     ON SCHEDULE AT CURRENT_TIMESTAMP + INTERVAL 10 MINUTE
                                     ON COMPLETION NOT PRESERVE
                                     DO
@@ -953,7 +953,7 @@ router.get('/endTask', async (req, res, next) => {
 
             await sql.query(`UPDATE users SET executedTasksForDay = executedTasksForDay + 1 WHERE id = ?`, [user.id])
             await sql.query(`UPDATE projects SET lastCollection = CURRENT_TIMESTAMP WHERE id = ?`, [task.projectId])
-
+            await sql.query(`DROP EVENT IF EXISTS set_not_executing${task.id}`)
             return res.send({successful: true})
         }
         else
