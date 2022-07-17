@@ -1126,7 +1126,7 @@ router.post('/updateProject', async (req, res, next) => {
                 projectId
             ])
 
-            await sql.query(`DROP EVENT IF EXIST e_project_create_tasks_id${projectId}`)
+            await sql.query(`DROP EVENT IF EXISTS e_project_create_tasks_id${projectId}`)
             await sql.query(`
                 CREATE EVENT e_project_create_tasks_id${projectId}
                 ON SCHEDULE EVERY 1 DAY
