@@ -339,33 +339,6 @@ router.get('/getClient', async (req, res, next) => {
     }
 })
 
-router.get('/getConfig', async (req, res, next) => {
-    let secret = req.query['c']
-
-    try {
-        let [sessions] = await sql.query('SELECT * FROM sessions WHERE secret = ?', [secret])
-
-        if (sessions.length) {
-            let session = sessions[0]
-
-            let [users] = await sql.query('SELECT * FROM users WHERE id = ?', [session.userId])
-
-            /**
-             * @type {User}
-             */
-            let user = users[0]
-            let config = `${__dirname}/../files/config.key`
-            fs.writeFileSync(config, user.programHash)
-            res.download(config)
-        }
-        else
-            throw new ApiError("Сессии не существует")
-    }
-    catch (e){
-        return next(e)
-    }
-})
-
 router.get('/addQuery', async (req, res, next) => {
     let secret = req.query['c']
     let queryText = req.query['text']
@@ -1317,7 +1290,6 @@ router.get('/getPositionsQuery', async (req, res, next) => {
 router.get('/getExpenses', async (req, res, next) => {
     let secret = req.query['c']
     let page = (Number(req.query['p']) || 0)  * PAGE_COUNT
-    let projectId = Number(req.query['projectId'])
     let from = new Date(req.query['from'])
     let to = new Date(req.query['to'])
 
@@ -1325,8 +1297,8 @@ router.get('/getExpenses', async (req, res, next) => {
         let [sessions] = await sql.query('SELECT * FROM sessions WHERE secret = ?', [secret])
 
         if (sessions.length) {
-            let [expenses] = await sql.query('SELECT * FROM pozishen.expenses WHERE projectId = ? AND userId = ? AND DATE(date) BETWEEN ? AND ? ORDER BY date DESC LIMIT ?, ?',
-                    [projectId, sessions[0].userId, from.toISOString().slice(0, 19).replace('T', ' '), to.toISOString().slice(0, 19).replace('T', ' '), page, 25])
+            let [expenses] = await sql.query('SELECT * FROM pozishen.expenses WHERE userId = ? AND DATE(date) BETWEEN ? AND ? ORDER BY date DESC LIMIT ?, ?',
+                    [sessions[0].userId, from.toISOString().slice(0, 19).replace('T', ' '), to.toISOString().slice(0, 19).replace('T', ' '), page, 25])
 
             return res.send({successful: true, data: expenses})
         }
@@ -1340,7 +1312,6 @@ router.get('/getExpenses', async (req, res, next) => {
 
 router.get('/getExpensesCount', async (req, res, next) => {
     let secret = req.query['c']
-    let projectId = Number(req.query['projectId'])
     let from = new Date(req.query['from'])
     let to = new Date(req.query['to'])
 
@@ -1348,8 +1319,8 @@ router.get('/getExpensesCount', async (req, res, next) => {
         let [sessions] = await sql.query('SELECT * FROM sessions WHERE secret = ?', [secret])
 
         if (sessions.length) {
-            let [expenses] = await sql.query('SELECT COUNT(*) FROM pozishen.expenses WHERE projectId = ? AND userId = ? AND DATE(date) BETWEEN ? AND ?',
-                [projectId, sessions[0].userId, from.toISOString().slice(0, 19).replace('T', ' '), to.toISOString().slice(0, 19).replace('T', ' ')])
+            let [expenses] = await sql.query('SELECT COUNT(*) FROM expenses WHERE userId = ? AND DATE(date) BETWEEN ? AND ?',
+                [sessions[0].userId, from.toISOString().slice(0, 19).replace('T', ' '), to.toISOString().slice(0, 19).replace('T', ' ')])
 
             return res.send({successful: true, data: expenses[0]['COUNT(*)']})
         }
