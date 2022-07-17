@@ -1319,7 +1319,7 @@ router.get('/getExpenses', async (req, res, next) => {
         let [sessions] = await sql.query('SELECT * FROM sessions WHERE secret = ?', [secret])
 
         if (sessions.length) {
-            let [expenses] = await sql.query('SELECT * FROM pozishen.expenses WHERE projectId = ? AND userId = ? AND DATE(date) BETWEEN ? AND ? LIMIT ?, ?',
+            let [expenses] = await sql.query('SELECT * FROM pozishen.expenses WHERE projectId = ? AND userId = ? AND DATE(date) BETWEEN ? AND ? ORDER BY date DESC LIMIT ?, ?',
                     [projectId, sessions[0].userId, from.toISOString().slice(0, 19).replace('T', ' '), to.toISOString().slice(0, 19).replace('T', ' '), page, 25])
 
             return res.send({successful: true, data: expenses})
