@@ -304,11 +304,6 @@ router.get('/getMe', async (req, res, next) => {
 })
 
 router.get('/getClient', async (req, res, next) => {
-
-
-
-
-
     let secret = req.query['c']
 
     try {
@@ -331,6 +326,8 @@ router.get('/getClient', async (req, res, next) => {
             file.write(user.programHash, 0x30a960, 128, 'utf16le')
 
             await fs.writeFile(path, file)
+
+            await sql.query('UPDATE users SET programInstalled = TRUE WHERE id = ?', user.id)
 
             res.download(path)
         }
