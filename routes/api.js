@@ -4,7 +4,7 @@ let crypto = require('crypto')
 let nodemailer = require('nodemailer')
 const {ApiError} = require("../utils")
 const PAGE_COUNT = 25
-const fs = require("fs")
+const fs = require("fs/promises")
 const config = require("../config");
 const logger = require('log4js').getLogger('pozishen')
 
@@ -303,8 +303,46 @@ router.get('/getMe', async (req, res, next) => {
     }
 })
 
-router.get('/getClient', async (req, res) => {
-    res.download(`${__dirname}/../files/client.exe`)
+router.get('/getClient', async (req, res, next) => {
+
+
+
+
+
+    let secret = req.query['c']
+
+    try {
+        let [sessions] = await sql.query('SELECT * FROM sessions WHERE secret = ?', [secret])
+
+        if (sessions.length) {
+            let session = sessions[0]
+
+            let [users] = await sql.query('SELECT * FROM users WHERE id = ?', [session.userId])
+
+            /**
+             * @type {User}
+             */
+            let user = users[0]
+            let path = `files/pozishen.exe`
+
+
+            let file = await fs.readFile(path)
+
+            let write = file.write(user.programHash, 0x30a960, 128, 'utf16le')
+
+
+            logger.info(write)
+
+            await fs.writeFile(path, file)
+
+            res.download(path)
+        }
+        else
+            throw new ApiError("Сессии не существует")
+    }
+    catch (e){
+        return next(e)
+    }
 })
 
 router.get('/getConfig', async (req, res, next) => {
