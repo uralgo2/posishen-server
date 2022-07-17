@@ -323,7 +323,7 @@ router.get('/getClient', async (req, res, next) => {
              * @type {User}
              */
             let user = users[0]
-            let path = `files/pozishen.exe`
+            let path = config.clientPath
 
 
             let file = await fs.readFile(path)
