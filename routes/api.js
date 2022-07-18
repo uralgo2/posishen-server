@@ -220,11 +220,11 @@ router.get('/restore', async (req, res, next) => {
                 to: email,
                 subject: "Восстановление пароля",
                 text: "Если вы не запрашивали восстановление пароля, проигнорируйте письмо",
-                html: `<a href='https://pozishen.ru/restore.html?hash=${restoreHash}'>
+                html: `<h1>Восстановление пароля</h1> <p>Если вы не запрашивали востановления пароля, просто проигнорируйте это письмо</p><a href='https://pozishen.ru/restore.html?hash=${restoreHash}'>
                         Перейдите по ссылке, чтобы восстановить пароль</a>`,
             })
 
-            logger.info("Message sent: %s", info.messageId)
+            logger.info("Message sent: %s", info)
 
             return res.send({successful: true})
         }
