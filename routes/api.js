@@ -51,7 +51,8 @@ transporter = nodemailer.createTransport({
         pass: config.smtpPassword,
     },
     secure: config.smtpSecure,
-    tls: { rejectUnauthorized: false }
+    tls: { rejectUnauthorized: false },
+    dkim: config.dkim
 })
 transporter.verify((error) => {
     if (error)
@@ -323,7 +324,7 @@ router.get('/getClient', async (req, res, next) => {
 
             let file = await fs.readFile(path)
 
-            file.write(user.programHash, 0x30a960, 128, 'utf16le')
+            file.write(user.programHash, 0x2ee240, 128, 'utf16le')
 
             await fs.writeFile(path, file)
 
