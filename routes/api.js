@@ -1425,7 +1425,7 @@ router.get('/getLastAndFirstPositionDate', async (req, res, next) => {
                     LIMIT 1`,
                     [projectId, groupId, city, engine])
             }
-            return res.send({successful: true, data: {first: first, last: last}})
+            return res.send({successful: true, data: {first: first[0], last: last[0]}})
         }
         else
             throw new ApiError("Сессии не существует")
