@@ -1373,4 +1373,66 @@ router.get('/collect', async (req, res, next) => {
         return next(e)
     }
 })
+
+router.get('/getLastAndFirstPositionDate', async (req, res, next) => {
+    let secret = req.query['c']
+    let groupId = Number(req.query['groupId'] || 0)
+    let projectId = Number(req.query['projectId'])
+    let city = req.query['city']
+    let engine = req.query['engine']
+
+    try {
+        let [sessions] = await sql.query('SELECT * FROM sessions WHERE secret = ?', [secret])
+
+        if (sessions.length) {
+            let first, last;
+
+            if(groupId === 0) {
+                [first] = await sql.query(`
+                SELECT * FROM results 
+                    WHERE projectId = ? 
+                      AND cityCollection = ? 
+                      AND engineCollection = ? 
+                    ORDER BY lastCollection DESC
+                    LIMIT 1`,
+                    [projectId, city, engine])
+                [last] = await sql.query(`
+                SELECT * FROM results 
+                    WHERE projectId = ? 
+                      AND cityCollection = ? 
+                      AND engineCollection = ? 
+                    ORDER BY lastCollection
+                    LIMIT 1`,
+                    [projectId, city, engine])
+            }
+            else {
+                [first] = await sql.query(`
+                SELECT * FROM results 
+                    WHERE projectId = ? 
+                      AND groupId = ? 
+                      AND cityCollection = ? 
+                      AND engineCollection = ? 
+                    ORDER BY lastCollection DESC 
+                    LIMIT 1`,
+                    [projectId, groupId, city, engine])
+                [last] = await sql.query(`
+                SELECT * FROM results 
+                    WHERE projectId = ? 
+                      AND groupId = ? 
+                      AND cityCollection = ? 
+                      AND engineCollection = ? 
+                    ORDER BY lastCollection 
+                    LIMIT 1`,
+                    [projectId, groupId, city, engine])
+            }
+            return res.send({successful: true, data: {first: first, last: last}})
+        }
+        else
+            throw new ApiError("Сессии не существует")
+    }
+    catch (e){
+        return next(e)
+    }
+})
+
 module.exports = router
