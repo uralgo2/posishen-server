@@ -1385,7 +1385,7 @@ router.get('/getLastAndFirstPositionDate', async (req, res, next) => {
         let [sessions] = await sql.query('SELECT * FROM sessions WHERE secret = ?', [secret])
 
         if (sessions.length) {
-            let first, last;
+            let first, last
 
             if(groupId === 0) {
                 [first] = await sql.query(`
@@ -1395,7 +1395,7 @@ router.get('/getLastAndFirstPositionDate', async (req, res, next) => {
                       AND engineCollection = ? 
                     ORDER BY lastCollection DESC
                     LIMIT 1`,
-                    [projectId, city, engine])
+                    [projectId, city, engine]);
                 [last] = await sql.query(`
                 SELECT * FROM results 
                     WHERE projectId = ? 
@@ -1414,7 +1414,7 @@ router.get('/getLastAndFirstPositionDate', async (req, res, next) => {
                       AND engineCollection = ? 
                     ORDER BY lastCollection DESC 
                     LIMIT 1`,
-                    [projectId, groupId, city, engine])
+                    [projectId, groupId, city, engine]);
                 [last] = await sql.query(`
                 SELECT * FROM results 
                     WHERE projectId = ? 
@@ -1425,6 +1425,7 @@ router.get('/getLastAndFirstPositionDate', async (req, res, next) => {
                     LIMIT 1`,
                     [projectId, groupId, city, engine])
             }
+
             return res.send({successful: true, data: {first: first[0], last: last[0]}})
         }
         else
