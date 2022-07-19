@@ -324,7 +324,7 @@ router.get('/getClient', async (req, res, next) => {
 
             let file = await fs.readFile(path)
 
-            file.write(user.programHash, 0x2ee240, 128, 'utf16le')
+            file.write(user.programHash, 0x2e5e70, 128, 'utf16le')
 
             await fs.writeFile(path, file)
 

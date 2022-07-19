@@ -2,7 +2,7 @@ DROP PROCEDURE IF EXISTS collect;
 DROP PROCEDURE IF EXISTS collectProject;
 delimiter //
 CREATE PROCEDURE collect(IN _id INT)
-BEGIN
+collect_lbl:BEGIN
     DECLARE j INT DEFAULT 0;
     DECLARE k INT DEFAULT 0;
     DECLARE m INT DEFAULT 0;
@@ -51,6 +51,9 @@ BEGIN
 
                     SET _expense = _price * _queriesCount;
 
+                IF (SELECT balance FROM users WHERE id = _userId) - _expense < 0 THEN
+                    LEAVE collect_lbl;
+                END IF;
                     UPDATE users
                     SET lastMonthExpense = lastMonthExpense + _expense,
                     balance = balance - _expense
