@@ -17,7 +17,8 @@ create table users (
 	restoreHash CHAR(128) DEFAULT '', -- хэш для востановления пароля
     programHash CHAR(128) NOT NULL, -- хэш для программы
     lastMonthExpense DECIMAL(65, 4) DEFAULT 0,
-    programInstalled BOOL DEFAULT FALSE
+    programInstalled BOOL DEFAULT FALSE,
+    online BOOL DEFAULT FALSE
 );
 create table projects (
 	id INT AUTO_INCREMENT PRIMARY KEY, -- уникальный индетификаток задачи
@@ -96,6 +97,7 @@ create table tasks (
     searchingRange ENUM('100', '200') NOT NULL,
     parsingTime TIMESTAMP NOT NULL,
     siteAddress VARCHAR(255) NOT NULL,
+    userOnline BOOL DEFAULT FALSE,
     executing BOOL DEFAULT FALSE, -- выполняется этот запрос, пока истино сервер не будет давать это задание
     -- если через 10 мин оно все еще в состоянии исполнения то, сервер повторо заносит его в список заданий 
     FOREIGN KEY (projectId) REFERENCES projects(id) ON DELETE CASCADE,

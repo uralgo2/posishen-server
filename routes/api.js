@@ -386,8 +386,6 @@ router.get('/addQuery', async (req, res, next) => {
                 throw new ApiError("Вы не владелец проекта")
 
             let [info] = await sql.query("INSERT INTO queries(groupId, queryText) VALUES (?, ?)", [groupId, queryText])
-            await sql.query("UPDATE projects SET queriesCount = queriesCount + 1 WHERE id = ?", [projectId])
-            await sql.query("UPDATE _groups SET queriesCount = queriesCount + 1 WHERE id = ?", [groupId])
             return res.send({successful: true, data: {
                     groupId: groupId,
                     id: info.insertId,
@@ -453,8 +451,6 @@ router.post('/addQueries', async (req, res, next) => {
                 infos.push({id:info.insertId})
             }
 
-            await sql.query("UPDATE projects SET queriesCount = queriesCount + ? WHERE id = ?", [infos.length, projectId])
-            await sql.query("UPDATE _groups SET queriesCount = queriesCount + ? WHERE id = ?", [infos.length,groupId])
             return res.send({successful: true, data: infos})
         }
         else
@@ -573,8 +569,6 @@ router.get('/deleteQuery', async (req, res, next) => {
 
             await sql.query("DELETE FROM queries WHERE id = ?", [queryId])
 
-            await sql.query("UPDATE projects SET queriesCount = queriesCount - 1 WHERE id = ?", [projectId])
-            await sql.query("UPDATE _groups SET queriesCount = queriesCount - 1 WHERE id = ?", [groupId])
 
             return res.send({successful: true})
         }
@@ -631,8 +625,6 @@ router.get('/deleteGroup', async (req, res, next) => {
                 throw new ApiError("Вы не владелец проекта")
 
             await sql.query("DELETE FROM _groups WHERE id = ?", [groupId])
-            await sql.query("UPDATE projects SET queriesCount = queriesCount - 1 WHERE id = ?", [projectId])
-            await sql.query("UPDATE _groups SET queriesCount = queriesCount - 1 WHERE id = ?", [groupId])
 
             return res.send({successful: true})
         }
@@ -817,6 +809,13 @@ router.get('/getSettings', async (req, res, next) => {
              */
             let user = users[0]
 
+            await sql.query(`DROP EVENT IF EXISTS set_offline_id${user.id}`)
+            await sql.query(`CREATE EVENT set_offline_id${user.id}
+                                    ON SCHEDULE AT CURRENT_TIMESTAMP + INTERVAL ? SECOND
+                                    ON COMPLETION NOT PRESERVE
+                                    DO
+                                      UPDATE users SET online = FALSE WHERE id = ?`, [config.programOfflineTimeout], [user.id])
+
             return res.send({
                 successful: true,
                 data: {
@@ -899,13 +898,19 @@ router.get('/getTask', async (req, res, next) => {
              */
             let task = tasks[0]
 
+            await sql.query(`DROP EVENT IF EXISTS set_offline_id${user.id}`)
+            await sql.query(`CREATE EVENT set_offline_id${user.id}
+                                    ON SCHEDULE AT CURRENT_TIMESTAMP + INTERVAL ? SECOND
+                                    ON COMPLETION NOT PRESERVE
+                                    DO
+                                      UPDATE users SET online = FALSE WHERE id = ?`, [config.programOfflineTimeout], [user.id])
 
             await sql.query(`UPDATE tasks SET executing = TRUE WHERE id = ?`, [task.id])
             await sql.query(`CREATE EVENT set_not_executing${task.id}
-                                    ON SCHEDULE AT CURRENT_TIMESTAMP + INTERVAL 10 MINUTE
+                                    ON SCHEDULE AT CURRENT_TIMESTAMP + INTERVAL ? SECOND
                                     ON COMPLETION NOT PRESERVE
                                     DO
-                                      UPDATE tasks SET executing = FALSE WHERE id = ?`, [task.id])
+                                      UPDATE tasks SET executing = FALSE WHERE id = ?`, [config.taskWaitTimeout], [task.id])
 
             return res.send({successful: true, data: task})
         }
@@ -955,6 +960,13 @@ router.get('/endTask', async (req, res, next) => {
             await sql.query(`UPDATE users SET executedTasksForDay = executedTasksForDay + 1 WHERE id = ?`, [user.id])
             await sql.query(`UPDATE projects SET lastCollection = CURRENT_TIMESTAMP WHERE id = ?`, [task.projectId])
             await sql.query(`DROP EVENT IF EXISTS set_not_executing${task.id}`)
+            await sql.query(`DROP EVENT IF EXISTS set_offline_id${user.id}`)
+            await sql.query(`CREATE EVENT set_offline_id${user.id}
+                                    ON SCHEDULE AT CURRENT_TIMESTAMP + INTERVAL ? SECOND
+                                    ON COMPLETION NOT PRESERVE
+                                    DO
+                                      UPDATE users SET online = FALSE WHERE id = ?`, [config.programOfflineTimeout], [user.id])
+
             return res.send({successful: true})
         }
         else
