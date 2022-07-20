@@ -809,6 +809,7 @@ router.get('/getSettings', async (req, res, next) => {
              */
             let user = users[0]
 
+            await sql.query(`UPDATE users SET online = TRUE WHERE id = ?`, [user.id])
             await sql.query(`DROP EVENT IF EXISTS set_offline_id${user.id}`)
             await sql.query(`CREATE EVENT set_offline_id${user.id}
                                     ON SCHEDULE AT CURRENT_TIMESTAMP + INTERVAL ? SECOND
@@ -898,7 +899,7 @@ router.get('/getTask', async (req, res, next) => {
              * @type {Task}
              */
             let task = tasks[0]
-
+            await sql.query(`UPDATE users SET online = TRUE WHERE id = ?`, [user.id])
             await sql.query(`DROP EVENT IF EXISTS set_offline_id${user.id}`)
             await sql.query(`CREATE EVENT set_offline_id${user.id}
                                     ON SCHEDULE AT CURRENT_TIMESTAMP + INTERVAL ? SECOND
@@ -958,7 +959,7 @@ router.get('/endTask', async (req, res, next) => {
                                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
                 [task.queryId,task.queryText, task.groupId, task.projectId, place, task.city, task.searchingEngine, foundAddress])
 
-            await sql.query(`UPDATE users SET executedTasksForDay = executedTasksForDay + 1 WHERE id = ?`, [user.id])
+            await sql.query(`UPDATE users SET executedTasksForDay = executedTasksForDay + 1, online = TRUE WHERE id = ?`, [user.id])
             await sql.query(`UPDATE projects SET lastCollection = CURRENT_TIMESTAMP WHERE id = ?`, [task.projectId])
             await sql.query(`DROP EVENT IF EXISTS set_not_executing${task.id}`)
             await sql.query(`DROP EVENT IF EXISTS set_offline_id${user.id}`)
