@@ -691,14 +691,8 @@ router.get('/getQueries', async(req, res, next) => {
             let session = sessions[0]
 
             if(groupId === 0){
-                let [groups] = await sql.query('SELECT * FROM _groups WHERE projectId = ?', [projectId])
+                let [queries] = await sql.query('SELECT * FROM queries WHERE (SELECT projectId FROM _groups WHERE id = groupId) = ? ORDER BY id LIMIT ?, ?', [projectId, page, 25])
 
-                let queries = []
-
-                for(let i = 0; i < groups.length; i++){
-                    let [q] = await sql.query('SELECT * FROM queries WHERE groupId = ? ORDER BY id LIMIT ?, ?', [groups[i].id, page, 25])
-                    queries = queries.concat(q)
-                }
 
                 return res.send({successful: true, data: queries})
             }

@@ -1,9 +1,10 @@
-DROP TRIGGER IF EXISTS add_query_count;
-DROP TRIGGER IF EXISTS delete_query_count;
-DROP TRIGGER IF EXISTS add_queries_count;
-DROP TRIGGER IF EXISTS delete_queries_count;
-DROP TRIGGER IF EXISTS update_online;
-DELIMITER //
+
+DROP TRIGGER IF EXISTS add_query_count//
+DROP TRIGGER IF EXISTS delete_query_count//
+DROP TRIGGER IF EXISTS add_queries_count//
+DROP TRIGGER IF EXISTS delete_queries_count//
+DROP TRIGGER IF EXISTS update_online//
+
 CREATE TRIGGER add_query_count AFTER INSERT ON queries
     FOR EACH ROW BEGIN
         UPDATE _groups SET queriesCount = queriesCount + 1 WHERE id = NEW.groupId;
@@ -25,7 +26,5 @@ END//
 
 CREATE TRIGGER update_online AFTER UPDATE ON users
     FOR EACH ROW BEGIN
-        IF NEW.online != OLD.online THEN
-            UPDATE tasks SET userOnline = NEW.online WHERE userId = NEW.id;
-        END IF;
+        UPDATE tasks SET userOnline = NEW.online WHERE userId = NEW.id;
 END//
