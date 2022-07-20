@@ -814,7 +814,7 @@ router.get('/getSettings', async (req, res, next) => {
                                     ON SCHEDULE AT CURRENT_TIMESTAMP + INTERVAL ? SECOND
                                     ON COMPLETION NOT PRESERVE
                                     DO
-                                      UPDATE users SET online = FALSE WHERE id = ?`, [config.programOfflineTimeout], [user.id])
+                                      UPDATE users SET online = FALSE WHERE id = ?`, [config.programOfflineTimeout, user.id])
 
             return res.send({
                 successful: true,
@@ -904,14 +904,14 @@ router.get('/getTask', async (req, res, next) => {
                                     ON SCHEDULE AT CURRENT_TIMESTAMP + INTERVAL ? SECOND
                                     ON COMPLETION NOT PRESERVE
                                     DO
-                                      UPDATE users SET online = FALSE WHERE id = ?`, [config.programOfflineTimeout], [user.id])
+                                      UPDATE users SET online = FALSE WHERE id = ?`, [config.programOfflineTimeout, user.id])
 
             await sql.query(`UPDATE tasks SET executing = TRUE WHERE id = ?`, [task.id])
             await sql.query(`CREATE EVENT set_not_executing${task.id}
                                     ON SCHEDULE AT CURRENT_TIMESTAMP + INTERVAL ? SECOND
                                     ON COMPLETION NOT PRESERVE
                                     DO
-                                      UPDATE tasks SET executing = FALSE WHERE id = ?`, [config.taskWaitTimeout], [task.id])
+                                      UPDATE tasks SET executing = FALSE WHERE id = ?`, [config.taskWaitTimeout, task.id])
 
             return res.send({successful: true, data: task})
         }
@@ -966,7 +966,7 @@ router.get('/endTask', async (req, res, next) => {
                                     ON SCHEDULE AT CURRENT_TIMESTAMP + INTERVAL ? SECOND
                                     ON COMPLETION NOT PRESERVE
                                     DO
-                                      UPDATE users SET online = FALSE WHERE id = ?`, [config.programOfflineTimeout], [user.id])
+                                      UPDATE users SET online = FALSE WHERE id = ?`, [config.programOfflineTimeout, user.id])
 
             return res.send({successful: true})
         }
@@ -1375,6 +1375,7 @@ router.get('/collect', async (req, res, next) => {
             let [projects] = await sql.query('SELECT * FROM projects WHERE id = ?', [projectId])
 
             if(!projects.length) throw new ApiError('Проекта не существует')
+
             await sql.query('CALL collect(?)', [projectId])
 
             return res.send({successful: true})

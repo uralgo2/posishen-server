@@ -24,7 +24,7 @@ collect_lbl:BEGIN
     Declare _queriesCount INT DEFAULT 0;
             SET _projectId = _id;
 
-
+                DELETE FROM results WHERE projectId = _projectId AND DATE(lastCollection) = DATE(NOW());
                 DELETE FROM tasks WHERE projectId = _projectId AND executing = 0;
 
                 SELECT searchingRange, siteAddress, userId, queriesCount FROM projects WHERE id = _projectId
