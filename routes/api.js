@@ -887,6 +887,7 @@ router.get('/getTask', async (req, res, next) => {
                 [tasks] = await sql.query(`SELECT * FROM tasks 
                                           WHERE executing = FALSE
                                           AND TIMEDIFF(tasks.parsingTime, CURRENT_TIMESTAMP) <= 0
+                                          AND userOnline = FALSE 
                                           ORDER BY id
                                           LIMIT 1
                                           `)
