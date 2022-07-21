@@ -1,7 +1,7 @@
 DROP PROCEDURE IF EXISTS collect;
 DROP PROCEDURE IF EXISTS collectProject;
 delimiter //
-CREATE PROCEDURE collect(IN _id INT)
+CREATE PROCEDURE collect(IN _id INT) -- процедура сбора
 collect_lbl:BEGIN
     DECLARE j INT DEFAULT 0;
     DECLARE k INT DEFAULT 0;
@@ -25,8 +25,9 @@ collect_lbl:BEGIN
     DECLARE _searchingEngine SET('yandex', 'google') DEFAULT NULL;
             SET _projectId = _id;
 
+                -- удаляем если есть позиции с сегодняшней датой и активные задачи этого проекта
                 DELETE FROM results WHERE projectId = _projectId AND DATE(lastCollection) = DATE(NOW());
-                DELETE FROM tasks WHERE projectId = _projectId AND executing = 0;
+                DELETE FROM tasks WHERE projectId = _projectId;
 
 
                 SELECT searchingRange, siteAddress, userId, queriesCount FROM projects WHERE id = _projectId
@@ -35,6 +36,7 @@ collect_lbl:BEGIN
                 SELECT COUNT(*) FROM _groups WHERE _groups.projectId = _projectId INTO jn;
                 SELECT programInstalled, lastMonthExpense FROM users WHERE id = _userId INTO _programInstalled, _lastMonthExpense;
 
+                -- вычисляем стоимость одного запроса
                 IF _programInstalled = 1 THEN
                     IF _lastMonthExpense <= 300 THEN
                         SET _price = 0.02;
@@ -53,15 +55,20 @@ collect_lbl:BEGIN
 
                 SELECT searchEngine FROM projects WHERE id = _projectId INTO _searchingEngine;
 
+                -- если в проекте 2 поисковика то умножаем запросы на 2
+                -- конечное колличество запросов = колличество поисковиков * колличество городов * колличество запросов
                 IF _searchingEngine = 'yandex,google' OR _searchingEngine = 'google,yandex' THEN
                     SET _expense = _price * _queriesCount * (SELECT COUNT(*) FROM cities WHERE projectId = _projectId) * 2;
                 ELSE
                     SET _expense = _price * _queriesCount * (SELECT COUNT(*) FROM cities WHERE projectId = _projectId);
                 END IF;
 
+                -- если недостаточно баланса не добавляем задачи
                 IF (SELECT balance FROM users WHERE id = _userId) - _expense < 0 THEN
                     LEAVE collect_lbl;
                 END IF;
+
+                -- устанавливаем флаг сбора
                 IF _queriesCount != 0 THEN
                     UPDATE projects SET collected = FALSE WHERE id = _projectId;
                 END IF;
@@ -74,10 +81,12 @@ collect_lbl:BEGIN
                     VALUES (_userId, _projectId, _expense);
 
                 SET j=0;
+                -- проходим циклом по группам
                 WHILE j<jn DO
                         SELECT id FROM _groups WHERE projectId = _projectId LIMIT j, 1 INTO _groupId;
 
                         SELECT COUNT(*) FROM queries WHERE queries.groupId = _groupId INTO kn;
+                        -- проходим циклом по запросам
                         SET k=0;
                         WHILE k<kn DO
                                 SELECT id FROM queries WHERE groupId = _groupId LIMIT k, 1 INTO _queryId;
@@ -88,7 +97,7 @@ collect_lbl:BEGIN
                                 SET m=0;
                                 WHILE m<mn DO
                                         SELECT cityName FROM cities WHERE projectId = _projectId LIMIT m, 1 INTO _cityName;
-
+                                        -- добавляем задачи
                                         IF FIND_IN_SET('google', (SELECT searchEngine FROM projects WHERE id = _projectId)) > 0 THEN
                                             INSERT INTO tasks(userId, projectId, groupId, queryId, queryText, city, searchingEngine, searchingRange, parsingTime, siteAddress)
                                             VALUES (_userId,_projectId, _groupId, _queryId, _queryText, _cityName, 'google', _searchingRange, NOW(), _siteAddress);
@@ -111,6 +120,8 @@ END//
 
 CREATE PROCEDURE collectProject(_projectId INT)
 BEGIN
+    -- есть ли сегоднявший день в днях для парсинга
+    -- если есть то создаем задачи
     IF FIND_IN_SET(DAYNAME(CURDATE()), (SELECT parsingDays FROM projects WHERE id = _projectId)) > 0 THEN
         call collect(_projectId);
     END IF;

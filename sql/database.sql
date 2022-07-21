@@ -16,9 +16,9 @@ create table users (
     accountCreatedAt DATETIME DEFAULT NOW(), -- дата создания аккаунта
 	restoreHash CHAR(128) DEFAULT '', -- хэш для востановления пароля
     programHash CHAR(128) NOT NULL, -- хэш для программы
-    lastMonthExpense DECIMAL(65, 4) DEFAULT 0,
-    programInstalled BOOL DEFAULT FALSE,
-    online BOOL DEFAULT FALSE
+    lastMonthExpense DECIMAL(65, 4) DEFAULT 0, -- расходы за последний месяц
+    programInstalled BOOL DEFAULT FALSE, -- установлена ли программа
+    online BOOL DEFAULT FALSE -- запущенна ли программа
 );
 create table projects (
 	id INT AUTO_INCREMENT PRIMARY KEY, -- уникальный индетификаток задачи
@@ -33,71 +33,71 @@ create table projects (
 		'Friday', 'Saturday', 
 		'Sunday'
 	) NOT NULL, -- дни парсинга
-    queriesCount INT DEFAULT 0,
-    lastCollection VARCHAR(255) DEFAULT '-',
-    collected BOOLEAN DEFAULT FALSE,
-    FOREIGN KEY (userId) REFERENCES users (id) ON DELETE CASCADE    
+    queriesCount INT DEFAULT 0, -- колличество запросов
+    lastCollection VARCHAR(255) DEFAULT '-', -- дата последнего сбора
+    collected BOOLEAN DEFAULT FALSE, -- собраны ли данные в текущем сборе?
+    FOREIGN KEY (userId) REFERENCES users (id) ON DELETE CASCADE
 );
 create table _groups (
-	id INT AUTO_INCREMENT PRIMARY KEY,
-    projectId INT NOT NULL,
-    groupName VARCHAR(255) NOT NULL,
-    queriesCount INT DEFAULT 0,
+	id INT AUTO_INCREMENT PRIMARY KEY, -- айди
+    projectId INT NOT NULL, -- айди проекта
+    groupName VARCHAR(255) NOT NULL, -- имя группы
+    queriesCount INT DEFAULT 0, -- колличество запросов в группе
     FOREIGN KEY (projectId) REFERENCES projects (id) ON DELETE CASCADE
 );
 create table cities (
-	id INT AUTO_INCREMENT PRIMARY KEY,
-    projectId INT NOT NULL, -- айди задачи
+	id INT AUTO_INCREMENT PRIMARY KEY, -- айди
+    projectId INT NOT NULL, -- айди проекта
 	cityName VARCHAR(255), -- название города
     FOREIGN KEY (projectId) REFERENCES projects (id) ON DELETE CASCADE
 );
 create table queries (
-	id INT AUTO_INCREMENT PRIMARY KEY,
-    groupId INT NOT NULL,
-    queryText VARCHAR(255) NOT NULL,
+	id INT AUTO_INCREMENT PRIMARY KEY, -- айди
+    groupId INT NOT NULL, -- айди группы
+    queryText VARCHAR(255) NOT NULL, -- текст запроса
     FOREIGN KEY (groupId) REFERENCES _groups (id) ON DELETE CASCADE
 );
 create table results (
-	id INT AUTO_INCREMENT PRIMARY KEY,
-	queryId INT NOT NULL,
-    queryText VARCHAR(255) NOT NULL,
-	groupId INT NOT NULL,
-	projectId INT NOT NULL,
-    place INT NOT NULL,
-    lastCollection DATETIME DEFAULT NOW(),
-    cityCollection VARCHAR(255) NOT NULL,
-    engineCollection ENUM('yandex', 'google') NOT NULL,
-    foundAddress VARCHAR(255) NOT NULL,
+	id INT AUTO_INCREMENT PRIMARY KEY, -- айди
+	queryId INT NOT NULL, -- айди запроса
+    queryText VARCHAR(255) NOT NULL, -- текст запроса
+	groupId INT NOT NULL, -- адйи группы
+	projectId INT NOT NULL, -- айди проекта
+    place INT NOT NULL, -- место в поисковой выдаче
+    lastCollection DATETIME DEFAULT NOW(), -- дата сбора
+    cityCollection VARCHAR(255) NOT NULL, -- город сбора
+    engineCollection ENUM('yandex', 'google') NOT NULL, -- поисковик
+    foundAddress VARCHAR(255) NOT NULL, -- найденные адрес
     FOREIGN KEY (queryId) REFERENCES queries (id) ON DELETE CASCADE
 );
 create table sessions (
-	id INT AUTO_INCREMENT PRIMARY KEY, 
+	id INT AUTO_INCREMENT PRIMARY KEY, -- айди
     userId INT NOT NULL, -- айди пользователя
     secret CHAR(128) NOT NULL, -- секретный хэш для сессии
     FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE
 );
 create table expenses (
-	id INT AUTO_INCREMENT PRIMARY KEY,
-    userId INT NOT NULL,
-    date DATETIME DEFAULT NOW(),
-    projectId INT NOT NULL,
-    expense DECIMAL(65, 4) NOT NULL,
+	id INT AUTO_INCREMENT PRIMARY KEY, -- айди
+    userId INT NOT NULL, -- айди пользователя
+    date DATETIME DEFAULT NOW(), -- дата расхода
+    projectId INT NOT NULL, -- айди проекта
+    expense DECIMAL(65, 4) NOT NULL, -- расход
     FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE
 );
 
 create table tasks (
-	id INT AUTO_INCREMENT PRIMARY KEY,
-	userId INT NOT NULL,
-    projectId INT NOT NULL,
-    groupId INT NOT NULL,
-    queryId INT NOT NULL,
-    queryText VARCHAR(255) NOT NULL,
-    city VARCHAR (255) NOT NULL,
-    searchingEngine ENUM('yandex', 'google') NOT NULL,
-    searchingRange ENUM('100', '200') NOT NULL,
-    parsingTime TIMESTAMP NOT NULL,
-    siteAddress VARCHAR(255) NOT NULL,
-    userOnline BOOL DEFAULT FALSE,
+	id INT AUTO_INCREMENT PRIMARY KEY, -- айди
+	userId INT NOT NULL, -- айди пользователя
+    projectId INT NOT NULL, -- айди проекта
+    groupId INT NOT NULL, -- айди группы
+    queryId INT NOT NULL, -- айди запроса
+    queryText VARCHAR(255) NOT NULL, -- текст запроса
+    city VARCHAR (255) NOT NULL, -- город
+    searchingEngine ENUM('yandex', 'google') NOT NULL, -- поисковик
+    searchingRange ENUM('100', '200') NOT NULL, -- глубина поиска
+    parsingTime TIMESTAMP NOT NULL, -- время парсинга
+    siteAddress VARCHAR(255) NOT NULL, -- домен искомого сайта
+    userOnline BOOL DEFAULT FALSE, -- запущена ли программа пользователя - владельца проекта
     executing BOOL DEFAULT FALSE, -- выполняется этот запрос, пока истино сервер не будет давать это задание
     -- если через 10 мин оно все еще в состоянии исполнения то, сервер повторо заносит его в список заданий 
     FOREIGN KEY (projectId) REFERENCES projects(id) ON DELETE CASCADE,
@@ -107,11 +107,11 @@ create table tasks (
 );
 
 create table cityNames (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(255) NOT NULL UNIQUE KEY
+    id INT AUTO_INCREMENT PRIMARY KEY, -- айди
+    name VARCHAR(255) NOT NULL UNIQUE KEY -- имя города
 );
 
-INSERT INTO cityNames(name)
+INSERT INTO cityNames(name) -- добавляем города для поиска
 VALUES
     ('Архангельск'),
     ('Астрахань'),

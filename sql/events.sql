@@ -6,7 +6,7 @@ DROP EVENT IF EXISTS e_monthly;
 DROP  EVENT IF EXISTS event_task_create;
 delimiter //
 
-CREATE EVENT e_daily
+CREATE EVENT e_daily -- обновляем выполненные задачи за день
     ON SCHEDULE
         EVERY 1 DAY
     DO
@@ -16,7 +16,7 @@ UPDATE users SET executedTasksForWeek = executedTasksForWeek + executedTasksForD
 
 END //
 
-CREATE EVENT e_weekly
+CREATE EVENT e_weekly -- обновляем выполненные задачи за неделю
     ON SCHEDULE
         EVERY 1 WEEK
     DO
@@ -26,7 +26,7 @@ UPDATE users SET executedTasksForMonth = executedTasksForMonth + executedTasksFo
 
 END //
 
-CREATE EVENT e_monthly
+CREATE EVENT e_monthly -- обновляем выполненные задачи за месяц и траты за месяц
     ON SCHEDULE
         EVERY 1 MONTH
     DO
