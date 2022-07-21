@@ -666,7 +666,7 @@
 }
 ```
 # База данных
-##[Таблицы](./sql/database.sql)
-##[События](./sql/events.sql)
-##[Процедуры](./sql/procedures.sql)
-##[Триггеры](./sql/triggers.sql)
+[##Таблицы](./sql/database.sql)
+[##События](./sql/events.sql)
+[##Процедуры](./sql/procedures.sql)
+[##Триггеры](./sql/triggers.sql)
