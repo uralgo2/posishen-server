@@ -22,10 +22,12 @@ collect_lbl:BEGIN
     DECLARE _lastMonthExpense DECIMAL(65, 4) DEFAULT 0;
     DECLARE _expense DECIMAL(65, 4) DEFAULT 0;
     Declare _queriesCount INT DEFAULT 0;
+    DECLARE _searchingEngine SET('yandex', 'google') DEFAULT NULL;
             SET _projectId = _id;
 
                 DELETE FROM results WHERE projectId = _projectId AND DATE(lastCollection) = DATE(NOW());
                 DELETE FROM tasks WHERE projectId = _projectId AND executing = 0;
+
 
                 SELECT searchingRange, siteAddress, userId, queriesCount FROM projects WHERE id = _projectId
                 INTO _searchingRange, _siteAddress, _userId, _queriesCount;
@@ -49,10 +51,19 @@ collect_lbl:BEGIN
                     END IF;
                 END IF;
 
-                    SET _expense = _price * _queriesCount;
+                SELECT searchEngine FROM projects WHERE id = _projectId INTO _searchingEngine;
+
+                IF _searchingEngine = 'yandex,google' OR _searchingEngine = 'google,yandex' THEN
+                    SET _expense = _price * _queriesCount * (SELECT COUNT(*) FROM cities WHERE projectId = _projectId) * 2;
+                ELSE
+                    SET _expense = _price * _queriesCount * (SELECT COUNT(*) FROM cities WHERE projectId = _projectId);
+                END IF;
 
                 IF (SELECT balance FROM users WHERE id = _userId) - _expense < 0 THEN
                     LEAVE collect_lbl;
+                END IF;
+                IF _queriesCount != 0 THEN
+                    UPDATE projects SET collected = FALSE WHERE id = _projectId;
                 END IF;
                     UPDATE users
                     SET lastMonthExpense = lastMonthExpense + _expense,
