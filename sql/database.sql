@@ -6,7 +6,7 @@ create table users (
 	id INT AUTO_INCREMENT PRIMARY KEY, -- уникальный индетификатор пользователя
 	email VARCHAR(255) NOT NULL, 
     hashedPassword CHAR(128) NOT NULL, -- хэш пароля
-	balance DECIMAL(65, 4) DEFAULT 10, -- баланс по умолчанию 10 руб.
+	balance DECIMAL(65, 4) DEFAULT 100, -- баланс по умолчанию 100 руб.
     executedTasksForDay INT DEFAULT 0, -- выполненные задачи за день
 	executedTasksForWeek INT DEFAULT 0, -- выполненные задачи за неделю
     executedTasksForMonth INT DEFAULT 0, -- выполненные задачи за месяц
