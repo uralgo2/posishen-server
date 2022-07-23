@@ -345,7 +345,7 @@ router.get('/addQuery', async (req, res, next) => {
     let queryText = req.query['text']
     let groupId = Number(req.query['groupId'])
     let projectId = Number(req.query['projectId'])
-
+    let subgroupId = Number(req.query['subgroupId'] || 0)
     try {
         let [sessions] = await sql.query('SELECT * FROM sessions WHERE secret = ?', [secret])
 
@@ -385,11 +385,16 @@ router.get('/addQuery', async (req, res, next) => {
             if(user.id !== project.userId)
                 throw new ApiError("Вы не владелец проекта")
 
-            let [info] = await sql.query("INSERT INTO queries(groupId, queryText) VALUES (?, ?)", [groupId, queryText])
+            let info
+            if (subgroupId !== 0)
+                [info] = await sql.query("INSERT INTO queries(groupId, queryText, subgroupId) VALUES (?, ?, ?)", [groupId, queryText, subgroupId])
+            else
+                [info] = await sql.query("INSERT INTO queries(groupId, queryText) VALUES (?, ?)", [groupId, queryText])
             return res.send({successful: true, data: {
                     groupId: groupId,
                     id: info.insertId,
-                    queryText: queryText
+                    queryText: queryText,
+                    subgroupId: subgroupId || null
                 }})
         }
         else
@@ -498,6 +503,54 @@ router.get('/addGroup', async (req, res, next) => {
                     projectId: projectId,
                     id: info.insertId,
                     groupName: groupName,
+                    queriesCount: 0
+                }})
+        }
+        else
+            throw new ApiError("Сессии не существует")
+    }
+    catch (e){
+        return next(e)
+    }
+})
+
+router.get('/addSubgroup', async (req, res, next) => {
+    let secret = req.query['c']
+    let name = req.query['name']
+    let groupId = Number(req.query['groupId'])
+
+    try {
+        let [sessions] = await sql.query('SELECT * FROM sessions WHERE secret = ?', [secret])
+
+        if (sessions.length) {
+            let session = sessions[0]
+
+            let [groups] = await sql.query('SELECT * FROM _groups WHERE id = ?', [groupId])
+
+            if(!groups.length)
+                throw new ApiError("Проекта не существует")
+
+            /**
+             * @type {Project}
+             */
+            let project = projects[0]
+
+            let [users] = await sql.query('SELECT * FROM users WHERE id = ?', [session.userId])
+
+            /**
+             * @type {User}
+             */
+            let user = users[0]
+
+            if(user.id !== project.userId)
+                throw new ApiError("Вы не владелец проекта")
+
+            let [info] = await sql.query("INSERT INTO subgroups(groupId, subgroupName) VALUES (?, ?)", [groupId, name])
+
+            return res.send({successful: true, data: {
+                    projectId: projectId,
+                    id: info.insertId,
+                    subgroupName: name,
                     queriesCount: 0
                 }})
         }
@@ -636,6 +689,32 @@ router.get('/deleteGroup', async (req, res, next) => {
     }
 })
 
+router.get('/deleteSubgroup', async (req, res, next) => {
+    let secret = req.query['c']
+    let subgroupId = Number(req.query['subgroupId'])
+
+    try {
+        let [sessions] = await sql.query('SELECT * FROM sessions WHERE secret = ?', [secret])
+
+        if (sessions.length) {
+            let [subgroups] = await sql.query('SELECT * FROM subgroups WHERE id = ?', [subgroupId])
+
+            if(!subgroups.length)
+                throw new ApiError("Группы не существует")
+
+
+            await sql.query("DELETE FROM subgroups WHERE id = ?", [subgroupId])
+
+            return res.send({successful: true})
+        }
+        else
+            throw new ApiError("Сессии не существует")
+    }
+    catch (e){
+        return next(e)
+    }
+})
+
 router.get('/deleteProject', async (req, res, next) => {
     let secret = req.query['c']
     let projectId = Number(req.query['projectId'])
@@ -682,6 +761,7 @@ router.get('/getQueries', async(req, res, next) => {
     let secret = req.query['c']
     let page = (Number(req.query['p']) || 0)  * PAGE_COUNT
     let groupId = Number(req.query['groupId'])
+    let subgroupId = Number(req.query['subgroupId'] || 0)
     let projectId = Number(req.query['projectId'])
 
     try {
@@ -746,6 +826,49 @@ router.get('/getGroups', async (req, res, next) => {
             let [groups] = await sql.query('SELECT * FROM _groups WHERE projectId = ? ORDER BY id', [projectId])
 
             return res.send({successful: true, data: groups})
+        }
+        else
+            throw new ApiError("Сессии не существует")
+    }
+    catch (e){
+        return next(e)
+    }
+})
+
+router.get('/getSubgroups', async (req, res, next) => {
+    let secret = req.query['c']
+    let groupId = Number(req.query['groupId'])
+
+    try {
+        let [sessions] = await sql.query('SELECT * FROM sessions WHERE secret = ?', [secret])
+
+        if (sessions.length) {
+            let session = sessions[0]
+
+
+            let [projects] = await sql.query('SELECT * FROM projects WHERE id = ?', [projectId])
+
+            if(!projects.length)
+                throw new ApiError("Проекта не существует")
+
+            /**
+             * @type {Project}
+             */
+            let project = projects[0]
+
+            let [users] = await sql.query('SELECT * FROM users WHERE id = ?', [session.userId])
+
+            /**
+             * @type {User}
+             */
+            let user = users[0]
+
+            if(user.id !== project.userId)
+                throw new ApiError("Вы не владелец проекта")
+
+            let [subgroups] = await sql.query('SELECT * FROM subgroups WHERE groupId = ? ORDER BY id', [groupId])
+
+            return res.send({successful: true, data: subgroups})
         }
         else
             throw new ApiError("Сессии не существует")
@@ -830,6 +953,7 @@ router.get('/getPositions', async (req, res, next) => {
     let secret = req.query['c']
     let page = (Number(req.query['p']) || 0)  * PAGE_COUNT
     let groupId = Number(req.query['groupId'] || 0)
+    let subgroupId = Number(req.query['subgroupId'] || 0)
     let projectId = Number(req.query['projectId'])
     let city = req.query['city']
     let engine = req.query['engine']
@@ -845,10 +969,15 @@ router.get('/getPositions', async (req, res, next) => {
             if(groupId === 0)
                 [positions] = await sql.query('SELECT * FROM results WHERE projectId = ? AND cityCollection = ? AND engineCollection = ? AND DATE(lastCollection) BETWEEN ? AND ? ORDER BY lastCollection LIMIT ?, ?',
                     [projectId, city, engine, from.toISOString().slice(0, 19).replace('T', ' '), to.toISOString().slice(0, 19).replace('T', ' '), page, 25 ])
-            else
-                [positions] = await sql.query('SELECT * FROM results WHERE groupId = ? AND projectId = ? AND cityCollection = ? AND engineCollection = ? AND DATE(lastCollection) BETWEEN ? AND ? ORDER BY lastCollection LIMIT ?, ?',
-                    [groupId, projectId, city, engine, from.toISOString().slice(0, 19).replace('T', ' '), to.toISOString().slice(0, 19).replace('T', ' '), page, 25 ])
+            else {
+                if(subgroupId === 0)
+                    [positions] = await sql.query('SELECT * FROM results WHERE groupId = ? AND projectId = ? AND cityCollection = ? AND engineCollection = ? AND DATE(lastCollection) BETWEEN ? AND ? ORDER BY lastCollection LIMIT ?, ?',
+                        [groupId, projectId, city, engine, from.toISOString().slice(0, 19).replace('T', ' '), to.toISOString().slice(0, 19).replace('T', ' '), page, 25])
+                else
+                    [positions] = await sql.query('SELECT * FROM results WHERE groupId = ? AND subgroupId = ? AND projectId = ? AND cityCollection = ? AND engineCollection = ? AND DATE(lastCollection) BETWEEN ? AND ? ORDER BY lastCollection LIMIT ?, ?',
+                        [groupId, subgroupId, projectId, city, engine, from.toISOString().slice(0, 19).replace('T', ' '), to.toISOString().slice(0, 19).replace('T', ' '), page, 25])
 
+            }
             return res.send({successful: true, data: positions})
         }
         else
@@ -1141,6 +1270,7 @@ router.get('/updateSettings', async (req, res, next) => {
 router.get('/getQueriesCount', async(req, res, next) => {
     let secret = req.query['c']
     let groupId = Number(req.query['groupId'])
+    let subgroupId = Number(req.query['subgroupId'])
     let projectId = Number(req.query['projectId'])
 
     try {
@@ -1182,8 +1312,11 @@ router.get('/getQueriesCount', async(req, res, next) => {
             if(user.id !== project.userId)
                 throw new ApiError("Вы не владелец проекта")
 
-            let [queries] = await sql.query('SELECT COUNT(*) FROM queries WHERE groupId = ?', [groupId])
-
+            let queries
+            if(subgroupId === 0)
+                [queries] = await sql.query('SELECT COUNT(*) FROM queries WHERE groupId = ?', [groupId])
+            else
+                [queries] = await sql.query('SELECT COUNT(*) FROM queries WHERE subgroupId = ?', [subgroupId])
             return res.send({successful: true, data: queries[0]['COUNT(*)']})
         }
         else
@@ -1240,6 +1373,7 @@ router.get('/getCities', async (req, res, next) => {
 router.get('/getPositionsCount', async (req, res, next) => {
     let secret = req.query['c']
     let groupId = Number(req.query['groupId'] || 0)
+    let subgroupId = Number(req.query['subgroupId'] || 0)
     let projectId = Number(req.query['projectId'])
     let city = req.query['city']
     let engine = req.query['engine']
@@ -1256,8 +1390,12 @@ router.get('/getPositionsCount', async (req, res, next) => {
                 [count] = await sql.query('SELECT COUNT(*) FROM results WHERE projectId = ? AND cityCollection = ? AND engineCollection = ? AND DATE(lastCollection) BETWEEN ? AND ? ORDER BY id',
                     [projectId, city, engine, from.toISOString().slice(0, 19).replace('T', ' '), to.toISOString().slice(0, 19).replace('T', ' ')])
             else
-                [count] = await sql.query('SELECT COUNT(*) FROM results WHERE groupId = ? AND projectId = ? AND cityCollection = ? AND engineCollection = ? AND DATE(lastCollection) BETWEEN ? AND ? ORDER BY id',
-                    [groupId, projectId, city, engine, from.toISOString().slice(0, 19).replace('T', ' '), to.toISOString().slice(0, 19).replace('T', ' ')])
+                if (subgroupId === 0)
+                    [count] = await sql.query('SELECT COUNT(*) FROM results WHERE groupId = ? AND projectId = ? AND cityCollection = ? AND engineCollection = ? AND DATE(lastCollection) BETWEEN ? AND ? ORDER BY id',
+                        [groupId, projectId, city, engine, from.toISOString().slice(0, 19).replace('T', ' '), to.toISOString().slice(0, 19).replace('T', ' ')])
+                else
+                    [count] = await sql.query('SELECT COUNT(*) FROM results WHERE groupId = ? AND subgroupId = ? AND projectId = ? AND cityCollection = ? AND engineCollection = ? AND DATE(lastCollection) BETWEEN ? AND ? ORDER BY id',
+                        [groupId, subgroupId, projectId, city, engine, from.toISOString().slice(0, 19).replace('T', ' '), to.toISOString().slice(0, 19).replace('T', ' ')])
 
             return res.send({successful: true, data: count[0]['COUNT(*)']})
         }
@@ -1386,6 +1524,7 @@ router.get('/collect', async (req, res, next) => {
 router.get('/getLastAndFirstPositionDate', async (req, res, next) => {
     let secret = req.query['c']
     let groupId = Number(req.query['groupId'] || 0)
+    let subgroupId = Number(req.query['subgroupId'] || 0)
     let projectId = Number(req.query['projectId'])
     let city = req.query['city']
     let engine = req.query['engine']
@@ -1415,7 +1554,8 @@ router.get('/getLastAndFirstPositionDate', async (req, res, next) => {
                     [projectId, city, engine])
             }
             else {
-                [first] = await sql.query(`
+                if(subgroupId === 0) {
+                    [first] = await sql.query(`
                 SELECT * FROM results 
                     WHERE projectId = ? 
                       AND groupId = ? 
@@ -1423,8 +1563,8 @@ router.get('/getLastAndFirstPositionDate', async (req, res, next) => {
                       AND engineCollection = ? 
                     ORDER BY lastCollection DESC 
                     LIMIT 1`,
-                    [projectId, groupId, city, engine]);
-                [last] = await sql.query(`
+                        [projectId, groupId, city, engine]);
+                    [last] = await sql.query(`
                 SELECT * FROM results 
                     WHERE projectId = ? 
                       AND groupId = ? 
@@ -1432,7 +1572,31 @@ router.get('/getLastAndFirstPositionDate', async (req, res, next) => {
                       AND engineCollection = ? 
                     ORDER BY lastCollection 
                     LIMIT 1`,
-                    [projectId, groupId, city, engine])
+                        [projectId, groupId, city, engine])
+                }
+                else
+                {
+                    [first] = await sql.query(`
+                SELECT * FROM results 
+                    WHERE projectId = ? 
+                      AND groupId = ? 
+                      AND subgroupId = ?
+                      AND cityCollection = ? 
+                      AND engineCollection = ? 
+                    ORDER BY lastCollection DESC 
+                    LIMIT 1`,
+                        [projectId, groupId, subgroupId, city, engine]);
+                    [last] = await sql.query(`
+                SELECT * FROM results 
+                    WHERE projectId = ? 
+                      AND groupId = ? 
+                      AND subgroupId = ?
+                      AND cityCollection = ? 
+                      AND engineCollection = ? 
+                    ORDER BY lastCollection 
+                    LIMIT 1`,
+                        [projectId, groupId, subgroupId, city, engine])
+                }
             }
 
             return res.send({successful: true, data: {first: first[0], last: last[0]}})

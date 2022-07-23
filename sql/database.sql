@@ -1,6 +1,6 @@
 use pozishen;
 
-drop table users, projects, _groups, queries, cities, results, sessions, expenses, tasks, cityNames;
+drop table users, projects, _groups, queries, cities, results, sessions, expenses, tasks, cityNames, subgroups;
 
 create table users (
 	id INT AUTO_INCREMENT PRIMARY KEY, -- уникальный индетификатор пользователя
@@ -45,6 +45,13 @@ create table _groups (
     queriesCount INT DEFAULT 0, -- колличество запросов в группе
     FOREIGN KEY (projectId) REFERENCES projects (id) ON DELETE CASCADE
 );
+create table subgroups (
+  id INT AUTO_INCREMENT PRIMARY KEY, -- айди
+  groupId INT NOT NULL,
+  subgroupName VARCHAR(255) NOT NULL,
+  queriesCount INT DEFAULT 0,
+  FOREIGN KEY (groupId) REFERENCES _groups(id) ON DELETE CASCADE
+);
 create table cities (
 	id INT AUTO_INCREMENT PRIMARY KEY, -- айди
     projectId INT NOT NULL, -- айди проекта
@@ -54,8 +61,10 @@ create table cities (
 create table queries (
 	id INT AUTO_INCREMENT PRIMARY KEY, -- айди
     groupId INT NOT NULL, -- айди группы
+    subgroupId INT DEFAULT NULL,
     queryText VARCHAR(255) NOT NULL, -- текст запроса
-    FOREIGN KEY (groupId) REFERENCES _groups (id) ON DELETE CASCADE
+    FOREIGN KEY (groupId) REFERENCES _groups (id) ON DELETE CASCADE,
+    FOREIGN KEY (subgroupId) REFERENCES subgroups(id) ON DELETE CASCADE
 );
 create table results (
 	id INT AUTO_INCREMENT PRIMARY KEY, -- айди
@@ -68,7 +77,9 @@ create table results (
     cityCollection VARCHAR(255) NOT NULL, -- город сбора
     engineCollection ENUM('yandex', 'google') NOT NULL, -- поисковик
     foundAddress VARCHAR(255) NOT NULL, -- найденные адрес
-    FOREIGN KEY (queryId) REFERENCES queries (id) ON DELETE CASCADE
+    subgroupId INT DEFAULT NULL,
+    FOREIGN KEY (queryId) REFERENCES queries (id) ON DELETE CASCADE,
+    FOREIGN KEY (subgroupId) REFERENCES subgroups(id) ON DELETE CASCADE
 );
 create table sessions (
 	id INT AUTO_INCREMENT PRIMARY KEY, -- айди
@@ -90,6 +101,7 @@ create table tasks (
 	userId INT NOT NULL, -- айди пользователя
     projectId INT NOT NULL, -- айди проекта
     groupId INT NOT NULL, -- айди группы
+    subgroupId INT DEFAULT NULL,
     queryId INT NOT NULL, -- айди запроса
     queryText VARCHAR(255) NOT NULL, -- текст запроса
     city VARCHAR (255) NOT NULL, -- город
@@ -103,7 +115,8 @@ create table tasks (
     FOREIGN KEY (projectId) REFERENCES projects(id) ON DELETE CASCADE,
     FOREIGN KEY (queryId) REFERENCES queries(id) ON DELETE CASCADE,
 	FOREIGN KEY (groupId) REFERENCES _groups(id) ON DELETE CASCADE,
-    FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE
+    FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (subgroupId) REFERENCES subgroups(id) ON DELETE CASCADE
 );
 
 create table cityNames (

@@ -8,15 +8,22 @@ DROP TRIGGER IF EXISTS update_online//
 DROP TRIGGER IF EXISTS check_tasks//
 CREATE TRIGGER add_query_count AFTER INSERT ON queries -- инкрементируем колличество запросов при добавлении нового запроса
     FOR EACH ROW BEGIN
+        IF NEW.subgroupId != 0 THEN
+            UPDATE subgroups SET queriesCount = queriesCount + 1 WHERE id = NEW.subgroupId;
+        END IF;
         UPDATE _groups SET queriesCount = queriesCount + 1 WHERE id = NEW.groupId;
 END//
 CREATE TRIGGER delete_query_count AFTER DELETE ON queries -- декрементируем колличество запросов при добавлении нового запроса
     FOR EACH ROW BEGIN
+    IF OLD.subgroupId != 0 THEN
+        UPDATE subgroups SET queriesCount = queriesCount + 1 WHERE id = OLD.subgroupId;
+    END IF;
     UPDATE _groups SET queriesCount = queriesCount - 1 WHERE id = OLD.groupId;
 END//
 
 CREATE TRIGGER add_queries_count AFTER UPDATE ON _groups -- инкрементируем колличество запросов при добавлении нового запроса
     FOR EACH ROW BEGIN
+
     UPDATE projects SET queriesCount = queriesCount + 1 WHERE id = NEW.projectId;
 END//
 
