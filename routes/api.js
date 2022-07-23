@@ -1283,7 +1283,7 @@ router.get('/updateSettings', async (req, res, next) => {
 router.get('/getQueriesCount', async(req, res, next) => {
     let secret = req.query['c']
     let groupId = Number(req.query['groupId'])
-    let subgroupId = Number(req.query['subgroupId'])
+    let subgroupId = Number(req.query['subgroupId'] || 0)
     let projectId = Number(req.query['projectId'])
 
     try {
