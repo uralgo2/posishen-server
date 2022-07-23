@@ -539,7 +539,7 @@ router.get('/addSubgroup', async (req, res, next) => {
             let [info] = await sql.query("INSERT INTO subgroups(groupId, subgroupName) VALUES (?, ?)", [groupId, name])
 
             return res.send({successful: true, data: {
-                    projectId: projectId,
+                    groupId: groupId,
                     id: info.insertId,
                     subgroupName: name,
                     queriesCount: 0
