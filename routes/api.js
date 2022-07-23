@@ -691,7 +691,7 @@ router.get('/deleteSubgroup', async (req, res, next) => {
             let [subgroups] = await sql.query('SELECT * FROM subgroups WHERE id = ?', [subgroupId])
 
             if(!subgroups.length)
-                throw new ApiError("Группы не существует")
+                throw new ApiError("Под группы не существует")
 
 
             await sql.query("DELETE FROM subgroups WHERE id = ?", [subgroupId])

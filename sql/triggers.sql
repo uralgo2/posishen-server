@@ -43,3 +43,14 @@ CREATE TRIGGER check_tasks AFTER DELETE ON tasks -- если задач с та�
         UPDATE projects SET collected = TRUE WHERE id = OLD.projectId;
     END IF;
 END//
+
+CREATE TRIGGER add_queries_count_subgroup AFTER UPDATE ON subgroups -- инкрементируем колличество запросов при добавлении нового запроса
+    FOR EACH ROW BEGIN
+
+    UPDATE _groups SET queriesCount = queriesCount + 1 WHERE id = NEW.groupId;
+END//
+
+CREATE TRIGGER delete_queries_count_subgroup AFTER DELETE ON subgroups -- уменьшаем колличество запросов при добавлении нового запроса
+    FOR EACH ROW BEGIN
+    UPDATE _groups SET queriesCount = queriesCount - OLD.queriesCount WHERE id = OLD.groupId;
+END//
