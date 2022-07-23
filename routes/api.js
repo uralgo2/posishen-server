@@ -536,10 +536,6 @@ router.get('/addSubgroup', async (req, res, next) => {
             if(!groups.length)
                 throw new ApiError("Проекта не существует")
 
-            /**
-             * @type {Project}
-             */
-            let project = projects[0]
 
             let [users] = await sql.query('SELECT * FROM users WHERE id = ?', [session.userId])
 
