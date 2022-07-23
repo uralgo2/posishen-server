@@ -1305,6 +1305,7 @@ router.get('/getQueriesCount', async(req, res, next) => {
     }
 })
 
+
 router.get('/getCities', async (req, res, next) => {
     let secret = req.query['c']
     let projectId = Number(req.query['projectId'])
