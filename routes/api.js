@@ -534,18 +534,7 @@ router.get('/addSubgroup', async (req, res, next) => {
             let [groups] = await sql.query('SELECT * FROM _groups WHERE id = ?', [groupId])
 
             if(!groups.length)
-                throw new ApiError("Проекта не существует")
-
-
-            let [users] = await sql.query('SELECT * FROM users WHERE id = ?', [session.userId])
-
-            /**
-             * @type {User}
-             */
-            let user = users[0]
-
-            if(user.id !== project.userId)
-                throw new ApiError("Вы не владелец проекта")
+                throw new ApiError("Группы не существует")
 
             let [info] = await sql.query("INSERT INTO subgroups(groupId, subgroupName) VALUES (?, ?)", [groupId, name])
 
