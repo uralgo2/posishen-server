@@ -409,6 +409,7 @@ router.post('/addQueries', async (req, res, next) => {
     let secret = req.body['c']
     let texts = req.body['texts']
     let groupId = Number(req.body['groupId'])
+    let subgroupId = Number(req.body['groupId'] || 0)
     let projectId = Number(req.body['projectId'])
 
     try {
@@ -451,11 +452,16 @@ router.post('/addQueries', async (req, res, next) => {
                 throw new ApiError("Вы не владелец проекта")
 
             let infos = []
-            for(let q of texts){
-                let [info] = await sql.query("INSERT INTO queries(groupId, queryText) VALUES (?, ?)", [groupId, q])
-                infos.push({id:info.insertId})
-            }
-
+            if(subgroupId === 0)
+                for(let q of texts){
+                    let [info] = await sql.query("INSERT INTO queries(groupId, queryText) VALUES (?, ?)", [groupId, q])
+                    infos.push({id:info.insertId})
+                }
+            else
+                for(let q of texts){
+                    let [info] = await sql.query("INSERT INTO queries(groupId, subgroupId, queryText) VALUES (?, ?, ?)", [groupId, subgroupId, q])
+                    infos.push({id:info.insertId})
+                }
             return res.send({successful: true, data: infos})
         }
         else
@@ -771,6 +777,7 @@ router.get('/getQueries', async(req, res, next) => {
             let session = sessions[0]
 
             if(groupId === 0){
+
                 let [queries] = await sql.query('SELECT * FROM queries WHERE (SELECT projectId FROM _groups WHERE id = groupId) = ? ORDER BY id LIMIT ?, ?', [projectId, page, 25])
 
 
@@ -779,8 +786,14 @@ router.get('/getQueries', async(req, res, next) => {
 
 
             else {
-                let [queries] = await sql.query('SELECT * FROM queries WHERE groupId = ? ORDER BY id LIMIT ?, ?', [groupId, page, 25])
 
+                let queries
+
+                if(subgroupId === 0)
+                    [queries]= await sql.query('SELECT * FROM queries WHERE groupId = ? ORDER BY id LIMIT ?, ?', [groupId, page, 25])
+                else
+                    [queries]= await sql.query('SELECT * FROM queries WHERE groupId = ? AND subgroupId = ? ORDER BY id LIMIT ?, ?',
+                        [groupId, subgroupId, page, 25])
                 return res.send({successful: true, data: queries})
             }
         }
