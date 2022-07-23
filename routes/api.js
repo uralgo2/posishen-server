@@ -851,33 +851,13 @@ router.get('/getGroups', async (req, res, next) => {
 router.get('/getSubgroups', async (req, res, next) => {
     let secret = req.query['c']
     let groupId = Number(req.query['groupId'])
-    let projectId = Number(req.query['projectId'])
+
     try {
         let [sessions] = await sql.query('SELECT * FROM sessions WHERE secret = ?', [secret])
 
         if (sessions.length) {
             let session = sessions[0]
 
-
-            let [projects] = await sql.query('SELECT * FROM projects WHERE id = ?', [projectId])
-
-            if(!projects.length)
-                throw new ApiError("Проекта не существует")
-
-            /**
-             * @type {Project}
-             */
-            let project = projects[0]
-
-            let [users] = await sql.query('SELECT * FROM users WHERE id = ?', [session.userId])
-
-            /**
-             * @type {User}
-             */
-            let user = users[0]
-
-            if(user.id !== project.userId)
-                throw new ApiError("Вы не владелец проекта")
 
             let [subgroups] = await sql.query('SELECT * FROM subgroups WHERE groupId = ? ORDER BY id', [groupId])
 
