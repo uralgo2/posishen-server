@@ -409,7 +409,7 @@ router.post('/addQueries', async (req, res, next) => {
     let secret = req.body['c']
     let texts = req.body['texts']
     let groupId = Number(req.body['groupId'])
-    let subgroupId = Number(req.body['groupId'] || 0)
+    let subgroupId = Number(req.body['subgroupId'] || 0)
     let projectId = Number(req.body['projectId'])
 
     try {
