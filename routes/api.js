@@ -851,7 +851,7 @@ router.get('/getGroups', async (req, res, next) => {
 router.get('/getSubgroups', async (req, res, next) => {
     let secret = req.query['c']
     let groupId = Number(req.query['groupId'])
-
+    let projectId = Number(req.query['projectId'])
     try {
         let [sessions] = await sql.query('SELECT * FROM sessions WHERE secret = ?', [secret])
 
