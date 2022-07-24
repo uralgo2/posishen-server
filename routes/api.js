@@ -1745,10 +1745,12 @@ async function addFrequencyMore({texts, region}){
     for(const text of texts){
         const [freq] = await sql.query('SELECT * FROM frequencies WHERE cityName = ? AND queryText = ?', [region, text])
 
-        if(!freq.length){
+        if(!freq.length || freq[0].frequency === null){
             valid.push(text)
         }
     }
+
+    logger.info(valid)
 
     if(valid.length){
         const regionId = await utils.getRegionId(region)
