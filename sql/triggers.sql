@@ -23,7 +23,7 @@ CREATE TRIGGER delete_query_count AFTER DELETE ON queries -- декремент�
     END IF;
 
     UPDATE _groups SET queriesCount = queriesCount - 1 WHERE id = OLD.groupId;
-    UPDATE projects SET queriesCount = queriesCount + 1 WHERE id =
+    UPDATE projects SET queriesCount = queriesCount - 1 WHERE id =
                                                               (SELECT projectId FROM _groups WHERE id = OLD.groupId);
 END//
 

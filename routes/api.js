@@ -1740,6 +1740,7 @@ router.get('/getFrequency', async (req, res, next) => {
 })
 
 async function addFrequencyMore({texts, region}){
+    return ;
     const valid = []
 
     for(const text of texts){
@@ -1779,6 +1780,7 @@ async function addFrequencyMore({texts, region}){
 }
 
 async function getResultsFrequencies({id, region}){
+    return ;
     const res  = await fetch('https://word-keeper.ru/api/get_result', {
         method: 'post',
         body: JSON.stringify({
@@ -1818,7 +1820,7 @@ async function getResultsFrequencies({id, region}){
 }
 async function addFrequency({text, region}){
     const [freq] = await sql.query('SELECT * FROM frequencies WHERE cityName = ? AND queryText = ?', [region, text])
-
+    return ;
     if(!freq.length){
         try {
             const regionId = await utils.getRegionId(region)

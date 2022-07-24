@@ -71,6 +71,8 @@ collect_lbl:BEGIN
                 -- устанавливаем флаг сбора
                 IF _queriesCount != 0 THEN
                     UPDATE projects SET collected = FALSE WHERE id = _projectId;
+                ELSE
+                    LEAVE collect_lbl;
                 END IF;
                     UPDATE users
                     SET lastMonthExpense = lastMonthExpense + _expense,
