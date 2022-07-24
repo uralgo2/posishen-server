@@ -12,15 +12,5 @@ class ApiError extends Error {
 module.exports = {
     isProduction: () => false,//process.env.NODE_ENV === "production"
     ApiError: ApiError,
-    getRegionId: (region) => regions.find(reg => reg.title.toLowerCase() === region.toLowerCase())?.id || 225,
-    getFrequency: async (regionId, queryText) => {
-        const res = await fetch(`https://word-keeper.ru/api/word?token=${config.wordkeeperToken}&text=${encodeURI(queryText)}&geo=${regionId}&freq=1`)
-
-        const freq = Number(await res.text())
-
-        if(isNaN(freq))
-            return new Error()
-
-        return freq
-    }
+    getRegionId: (region) => regions.find(reg => reg.title.toLowerCase() === region.toLowerCase())?.id || 225
 }

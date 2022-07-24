@@ -386,26 +386,29 @@ router.get('/addQuery', async (req, res, next) => {
             if(user.id !== project.userId)
                 throw new ApiError("Вы не владелец проекта")
 
-            const [regions] = await sql.query('SELECT cityName FROM cities WHERE projectId = ?', projectId)
-
-            for(let region of regions){
-                addFrequency({
-                    text: queryText,
-                    region: region.cityName
-                })
-            }
 
             let info
             if (subgroupId !== 0)
                 [info] = await sql.query("INSERT INTO queries(groupId, queryText, subgroupId) VALUES (?, ?, ?)", [groupId, queryText, subgroupId])
             else
                 [info] = await sql.query("INSERT INTO queries(groupId, queryText) VALUES (?, ?)", [groupId, queryText])
-            return res.send({successful: true, data: {
+
+            res.send({successful: true, data: {
                     groupId: groupId,
                     id: info.insertId,
                     queryText: queryText,
                     subgroupId: subgroupId || null
                 }})
+
+            const [regions] = await sql.query('SELECT cityName FROM cities WHERE projectId = ?', projectId)
+
+            for(let region of regions){
+                await addFrequency({
+                    text: queryText,
+                    region: region.cityName
+                })
+            }
+
         }
         else
             throw new ApiError("Сессии не существует")
@@ -461,29 +464,30 @@ router.post('/addQueries', async (req, res, next) => {
             if(user.id !== project.userId)
                 throw new ApiError("Вы не владелец проекта")
 
-            for (let queryText of texts){
-                const [regions] = await sql.query('SELECT cityName FROM cities WHERE projectId = ?', projectId)
-
-                for(let region of regions){
-                    addFrequency({
-                        text: queryText,
-                        region: region.cityName
-                    })
+            let infos = []
+            if(subgroupId === 0) {
+                for (let q of texts) {
+                    let [info] = await sql.query("INSERT INTO queries(groupId, queryText) VALUES (?, ?)", [groupId, q])
+                    infos.push({id: info.insertId})
+                }
+            }
+            else {
+                for (let q of texts) {
+                    let [info] = await sql.query("INSERT INTO queries(groupId, subgroupId, queryText) VALUES (?, ?, ?)", [groupId, subgroupId, q])
+                    infos.push({id: info.insertId})
                 }
             }
 
-            let infos = []
-            if(subgroupId === 0)
-                for(let q of texts){
-                    let [info] = await sql.query("INSERT INTO queries(groupId, queryText) VALUES (?, ?)", [groupId, q])
-                    infos.push({id:info.insertId})
-                }
-            else
-                for(let q of texts){
-                    let [info] = await sql.query("INSERT INTO queries(groupId, subgroupId, queryText) VALUES (?, ?, ?)", [groupId, subgroupId, q])
-                    infos.push({id:info.insertId})
-                }
-            return res.send({successful: true, data: infos})
+            res.send({successful: true, data: infos})
+
+            const [regions] = await sql.query('SELECT cityName FROM cities WHERE projectId = ?', projectId)
+
+            for(let region of regions){
+                await addFrequencyMore({
+                    texts: texts,
+                    region: region.cityName
+                })
+            }
         }
         else
             throw new ApiError("Сессии не существует")
@@ -1644,10 +1648,14 @@ router.post('/addQueriesXLSX', async (req, res, next) => {
             const groups = new Map()
             const subgroups = new Map()
 
+            const texts = []
+
             for(const row of data){
                 const group = row[0]
                 const text = row[1]
                 const subgroup = row[2]
+
+                texts.push(text)
 
                 if(!groups.get(group)){
 
@@ -1679,16 +1687,6 @@ router.post('/addQueriesXLSX', async (req, res, next) => {
                 const groupId = groups.get(group)
                 const subgroupId = subgroups.get(subgroup) || null
 
-                const [regions] = await sql.query('SELECT cityName FROM cities WHERE projectId = ?', projectId)
-
-                for(let region of regions){
-                   addFrequency({
-                       text: text,
-                       region: region.cityName
-                   })
-                }
-
-
                 const [res] = await sql.query('INSERT INTO queries(groupId, subgroupId, queryText) VALUES (?, ?, ?)',
                     [groupId, subgroupId, text])
 
@@ -1699,7 +1697,17 @@ router.post('/addQueriesXLSX', async (req, res, next) => {
                     subgroupId: subgroupId
                 })
             }
-            return res.send({successful: true, data: infos})
+
+            res.send({successful: true, data: infos})
+
+            const [regions] = await sql.query('SELECT cityName FROM cities WHERE projectId = ?', projectId)
+
+            for(let region of regions){
+                await addFrequencyMore({
+                    texts: texts,
+                    region: region.cityName
+                })
+            }
         }
         else
             throw new ApiError("Сессии не существует")
@@ -1746,7 +1754,7 @@ async function addFrequencyMore({texts, region}){
         const regionId = await utils.getRegionId(region)
 
 
-        let res  = await fetch('https://word-keeper.ru/api/create_freqDiff', {
+        const res  = await fetch('https://word-keeper.ru/api/create_freqDiff', {
             method: 'post',
             body: JSON.stringify({
                 token: config.wordkeeperToken,
@@ -1755,12 +1763,51 @@ async function addFrequencyMore({texts, region}){
             })
         })
 
-        let json = res.json()
+        const json = res.json()
 
 
+        if(json.status !== 'ok') {
+            logger.info(json)
+            logger.info("trying again after 5 seconds")
+            return setTimeout(() => addFrequencyMore({texts: valid, region: region}), 5000)
+        }
+
+        const projectId = json.id
+
+        await getResultsFrequencies({id: projectId, region: region})
     }
 }
 
+async function getResultsFrequencies({id, region}){
+    const res  = await fetch('https://word-keeper.ru/api/get_result', {
+        method: 'post',
+        body: JSON.stringify({
+            token: config.wordkeeperToken,
+            id: id
+        })
+    })
+
+    const json = res.json()
+
+    if(json.status !== 'ok') {
+        logger.info(json)
+        logger.info("trying again after 5 seconds")
+        return setTimeout(() => getResultsFrequencies({id: id, region: region}), 5000)
+    }
+
+
+    const results = json.results
+
+    await fetch('https://word-keeper.ru/api/remove', {
+        method: 'post',
+        body: JSON.stringify({
+            token: config.wordkeeperToken,
+            id: id
+        })
+    })
+
+    logger.info(results)
+}
 async function addFrequency({text, region}){
     const [freq] = await sql.query('SELECT * FROM frequencies WHERE cityName = ? AND queryText = ?', [region, text])
 
@@ -1768,10 +1815,19 @@ async function addFrequency({text, region}){
         try {
             const regionId = await utils.getRegionId(region)
 
-            const frequency = await utils.getFrequency(regionId, text)
+            const res = await fetch(`https://word-keeper.ru/api/word?token=${config.wordkeeperToken}&text=${encodeURI(queryText)}&geo=${regionId}&freq=1`)
 
-            if(frequency instanceof Error)
+            const text = await res.text()
+
+            const json = JSON.parse(text)
+
+            if(json?.error) {
+                logger.info(json)
+                logger.info("trying again after 5 seconds")
                 return setTimeout(() => addFrequency({text: text, region: region}), 5000)
+            }
+
+            const frequency = Number(text)
 
             await sql.query('INSERT INTO frequencies(queryText, cityName, frequency) VALUES (?, ?, ?)',
                 [text, region, frequency])
