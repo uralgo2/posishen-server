@@ -1809,15 +1809,11 @@ async function getResultsFrequencies({id, region}){
     logger.info(results)
 
     const keys = Object.keys(results)
-    const values = Object.values(results)
-
-    logger.info(values)
 
     for(const key of keys){
-        const value = values[key]
+        const value = results[key]
         await sql.query('INSERT INTO frequencies(queryText, cityName, frequency) VALUES(?, ?, ?)',
             [key, region, value])
-        logger.info('%s = %s', key, value)
     }
 }
 async function addFrequency({text, region}){
