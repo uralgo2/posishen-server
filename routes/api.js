@@ -1763,7 +1763,7 @@ async function addFrequencyMore({texts, region}){
             })
         })
 
-        const json = res.json()
+        const json = await res.json()
 
 
         if(json.status !== 'ok') {
@@ -1787,7 +1787,7 @@ async function getResultsFrequencies({id, region}){
         })
     })
 
-    const json = res.json()
+    const json = await res.json()
 
     if(json.status !== 'ok') {
         logger.info(json)
