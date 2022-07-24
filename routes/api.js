@@ -1814,13 +1814,15 @@ async function getResultsFrequencies({id, region}){
 
     for(const key of keys){
         const value = results[key]
-        await sql.query('INSERT INTO frequencies(queryText, cityName, frequency) VALUES(?, ?, ?)',
+        await sql.query(`INSERT INTO frequencies(queryId, groupId, subgroupId, cityName, frequency)
+        VALUES(?, ?, ?)`,
             [key, region, value])
     }
 }
-async function addFrequency({text, region}){
-    const [freq] = await sql.query('SELECT * FROM frequencies WHERE cityName = ? AND queryText = ?', [region, text])
-    return ;
+async function addFrequency(queryId, groupId, cityName, subgroupId = null){
+    return;
+    const [freq] = await sql.query(`SELECT * FROM frequencies WHERE cityName = ? 
+                            AND queryId = ?`, [region, queryId])
     if(!freq.length){
         try {
             const regionId = await utils.getRegionId(region)
@@ -1839,7 +1841,7 @@ async function addFrequency({text, region}){
 
             const frequency = Number(textres)
 
-            await sql.query('INSERT INTO frequencies(queryText, cityName, frequency) VALUES (?, ?, ?)',
+            await sql.query(`INSERT INTO frequencies(queryId, groupId, subgroupId, cityName, frequency) VALUES (?, ?, ?)`,
                 [text, region, frequency])
         }
         catch(e) {
