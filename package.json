@@ -11,6 +11,7 @@
     "http-errors": "~1.6.3",
     "log4js": "^6.5.2",
     "mysql2": "^2.3.3",
+    "node-fetch": "^2.6.7",
     "nodemailer": "^6.7.6"
   },
   "devDependencies": {}

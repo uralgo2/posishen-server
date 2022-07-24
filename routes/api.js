@@ -7,7 +7,7 @@ const PAGE_COUNT = 25
 const fs = require("fs/promises")
 const config = require("../config");
 const logger = require('log4js').getLogger('pozishen')
-
+const utils = require('../utils')
 const mysql = require("mysql2/promise")
 
 let sql = null
@@ -385,6 +385,21 @@ router.get('/addQuery', async (req, res, next) => {
             if(user.id !== project.userId)
                 throw new ApiError("Вы не владелец проекта")
 
+            const [regions] = await sql.query('SELECT cityName FROM cities WHERE projectId = ?', projectId)
+
+            for(let region of regions){
+                const [freq] = await sql.query('SELECT * FROM frequencies WHERE cityName = ? AND queryText = ?', [region.cityName, queryText])
+
+                if(!freq.length){
+                    const regionId = await utils.getRegionId(region)
+
+                    const frequency = await utils.getFrequency(regionId, queryText)
+
+                    await sql.query('INSERT INTO frequencies(queryText, cityName, frequency) VALUES (?, ?, ?)',
+                        [queryText, region, frequency])
+                }
+            }
+
             let info
             if (subgroupId !== 0)
                 [info] = await sql.query("INSERT INTO queries(groupId, queryText, subgroupId) VALUES (?, ?, ?)", [groupId, queryText, subgroupId])
@@ -450,6 +465,23 @@ router.post('/addQueries', async (req, res, next) => {
 
             if(user.id !== project.userId)
                 throw new ApiError("Вы не владелец проекта")
+
+            for (let queryText of texts){
+                const [regions] = await sql.query('SELECT cityName FROM cities WHERE projectId = ?', projectId)
+
+                for(let region of regions){
+                    const [freq] = await sql.query('SELECT * FROM frequencies WHERE cityName = ? AND queryText = ?', [region.cityName, queryText])
+
+                    if(!freq.length){
+                        const regionId = await utils.getRegionId(region)
+
+                        const frequency = await utils.getFrequency(regionId, queryText)
+
+                        await sql.query('INSERT INTO frequencies(queryText, cityName, frequency) VALUES (?, ?, ?)',
+                            [queryText, region, frequency])
+                    }
+                }
+            }
 
             let infos = []
             if(subgroupId === 0)
@@ -1657,6 +1689,22 @@ router.post('/addQueriesXLSX', async (req, res, next) => {
 
                 const groupId = groups.get(group)
                 const subgroupId = subgroups.get(subgroup) || null
+
+                const [regions] = await sql.query('SELECT cityName FROM cities WHERE projectId = ?', projectId)
+
+                for(let region of regions){
+                    const [freq] = await sql.query('SELECT * FROM frequencies WHERE cityName = ? AND queryText = ?', [region.cityName, text])
+
+                    if(!freq.length){
+                        const regionId = await utils.getRegionId(region)
+
+                        const frequency = await utils.getFrequency(regionId, text)
+
+                        await sql.query('INSERT INTO frequencies(queryText, cityName, frequency) VALUES (?, ?, ?)',
+                            [text, region, frequency])
+                    }
+                }
+
 
                 const [res] = await sql.query('INSERT INTO queries(groupId, subgroupId, queryText) VALUES (?, ?, ?)',
                     [groupId, subgroupId, text])

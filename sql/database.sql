@@ -1,6 +1,6 @@
 use pozishen;
 
-drop table users, projects, _groups, queries, cities, results, sessions, expenses, tasks, cityNames, subgroups;
+drop table users, projects, _groups, queries, cities, results, sessions, expenses, tasks, cityNames, subgroups, frequencies;
 
 create table users (
 	id INT AUTO_INCREMENT PRIMARY KEY, -- уникальный индетификатор пользователя
@@ -65,6 +65,12 @@ create table queries (
     queryText VARCHAR(255) NOT NULL, -- текст запроса
     FOREIGN KEY (groupId) REFERENCES _groups (id) ON DELETE CASCADE,
     FOREIGN KEY (subgroupId) REFERENCES subgroups(id) ON DELETE CASCADE
+);
+create table frequencies (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    queryText INT NOT NULL,
+    cityName VARCHAR(255),
+    frequency VARCHAR(20) DEFAULT '--'
 );
 create table results (
 	id INT AUTO_INCREMENT PRIMARY KEY, -- айди
@@ -154,7 +160,7 @@ VALUES
     ('Курск'),
     ('Липецк'),
     ('Махачкала'),
-    ('Москва и Московская область'),
+    ('Москва и область'),
     ('Москва'),
     ('Мурманск'),
     ('Назрань'),
