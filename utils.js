@@ -1,6 +1,6 @@
 const fs = require('fs')
 const config = require('./config')
-const regions = JSON.parse(fs.readFileSync('regions.json').toString())
+const regions = JSON.parse(fs.readFileSync('./regions.json').toString())
 const fetch = require('node-fetch')
 
 class ApiError extends Error {
