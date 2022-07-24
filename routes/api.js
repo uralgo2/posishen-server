@@ -1627,16 +1627,16 @@ router.post('/addQueriesXLSX', async (req, res, next) => {
                 const group = row[0]
                 const text = row[1]
                 const subgroup = row[2]
-
+                logger.info(row)
                 if(!groups.get(group)){
-                    const [res] = await sql.query('INSERT INTO _groups(projectId, groupName) VALUES (?, ?)',
+                    const res = await sql.query('INSERT INTO _groups(projectId, groupName) VALUES (?, ?)',
                         [projectId, group])
 
                     groups.set(group, res.insertId)
                 }
 
                 if(subgroup && !subgroups.get(subgroup)){
-                    const [res] = await sql.query('INSERT INTO subgroups(groupId, subgroupName) VALUES (?, ?)',
+                    const res = await sql.query('INSERT INTO subgroups(groupId, subgroupName) VALUES (?, ?)',
                         [groups.get(group), subgroup])
 
                     subgroups.set(subgroup, res.insertId)
@@ -1645,7 +1645,7 @@ router.post('/addQueriesXLSX', async (req, res, next) => {
                 const groupId = groups.get(group)
                 const subgroupId = groups.get(subgroup) || null
 
-                const [res] = sql.query('INSERT INTO queries(groupId, subgroupId, queryText) VALUES (?, ?, ?)',
+                const res = sql.query('INSERT INTO queries(groupId, subgroupId, queryText) VALUES (?, ?, ?)',
                     [groupId, subgroupId, text])
 
                 infos.push({
