@@ -69,9 +69,7 @@ create table queries (
 create table frequencies (
     id INT AUTO_INCREMENT PRIMARY KEY,
 
-    queryId INT NOT NULL,
-    groupId INT NOT NULL,
-    subgroupId INT NOT NULL,
+    queryText INT NOT NULL,
 
     cityName VARCHAR(255),
     frequency VARCHAR(50) DEFAULT '--'

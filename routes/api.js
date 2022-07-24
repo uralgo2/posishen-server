@@ -403,10 +403,7 @@ router.get('/addQuery', async (req, res, next) => {
             const [regions] = await sql.query('SELECT cityName FROM cities WHERE projectId = ?', projectId)
 
             for(let region of regions){
-                await addFrequency({
-                    text: queryText,
-                    region: region.cityName
-                })
+                await addFrequency(queryText, region.cityName)
             }
 
         }
@@ -483,10 +480,7 @@ router.post('/addQueries', async (req, res, next) => {
             const [regions] = await sql.query('SELECT cityName FROM cities WHERE projectId = ?', projectId)
 
             for(let region of regions){
-                await addFrequencyMore({
-                    texts: texts,
-                    region: region.cityName
-                })
+                await addFrequencyMore(texts, region.cityName)
             }
         }
         else
@@ -1703,10 +1697,7 @@ router.post('/addQueriesXLSX', async (req, res, next) => {
             const [regions] = await sql.query('SELECT cityName FROM cities WHERE projectId = ?', projectId)
 
             for(let region of regions){
-                await addFrequencyMore({
-                    texts: texts,
-                    region: region.cityName
-                })
+                await addFrequencyMore(texts,region.cityName)
             }
         }
         else
@@ -1717,19 +1708,19 @@ router.post('/addQueriesXLSX', async (req, res, next) => {
     }
 })
 
-router.get('/getFrequency', async (req, res, next) => {
-    let secret = req.query['c']
-    let text = req.query['text']
-    let city = req.query['city']
+router.post('/getFrequency', async (req, res, next) => {
+    let secret = req.body['c']
+    let text = req.body['texts']
+    let city = req.body['city']
 
     try {
         let [sessions] = await sql.query('SELECT * FROM sessions WHERE secret = ?', [secret])
 
         if (sessions.length) {
 
-            const [freq] = await sql.query('SELECT frequency FROM frequencies WHERE queryText = ? AND cityName = ?', [text, city])
+            const [freq] = await sql.query('SELECT * FROM frequencies WHERE queryText = ? AND cityName = ?', [text, city])
 
-            return res.send({successful: true, data: freq.length ? freq[0].frequency : '--'})
+            return res.send({successful: true, data: freq})
         }
         else
             throw new ApiError("Сессии не существует")
@@ -1739,17 +1730,19 @@ router.get('/getFrequency', async (req, res, next) => {
     }
 })
 
-async function addFrequencyMore({texts, region}){
-    return ;
-    const valid = []
+async function addFrequencyMore(texts, region, checkValid = true){
+    let valid = []
 
-    for(const text of texts){
-        const [freq] = await sql.query('SELECT * FROM frequencies WHERE cityName = ? AND queryText = ?', [region, text])
+    if(checkValid) {
+        for (const text of texts) {
+            const [freq] = await sql.query('SELECT * FROM frequencies WHERE cityName = ? AND queryText = ?', [region, text])
 
-        if(!freq.length || freq[0].frequency === null){
-            valid.push(text)
+            if (!freq.length || freq[0].frequency === null) {
+                valid.push(text)
+            }
         }
     }
+    else valid = texts
 
     if(valid.length){
         const regionId = await utils.getRegionId(region)
@@ -1770,17 +1763,16 @@ async function addFrequencyMore({texts, region}){
         if(json.status !== 'ok') {
             logger.info(json)
             logger.info("trying again after 5 seconds")
-            return setTimeout(() => addFrequencyMore({texts: valid, region: region}), 5000)
+            return setTimeout(() => addFrequencyMore(valid, region, false), 5000)
         }
 
         const projectId = json.id
 
-        await getResultsFrequencies({id: projectId, region: region})
+        await getResultsFrequencies(projectId, region)
     }
 }
 
-async function getResultsFrequencies({id, region}){
-    return ;
+async function getResultsFrequencies(id, region){
     const res  = await fetch('https://word-keeper.ru/api/get_result', {
         method: 'post',
         body: JSON.stringify({
@@ -1794,7 +1786,7 @@ async function getResultsFrequencies({id, region}){
     if(json.status !== 'ok') {
         logger.info(json)
         logger.info("trying again after 5 seconds")
-        return setTimeout(() => getResultsFrequencies({id: id, region: region}), 5000)
+        return setTimeout(() => getResultsFrequencies(id, region), 5000)
     }
 
 
@@ -1814,15 +1806,14 @@ async function getResultsFrequencies({id, region}){
 
     for(const key of keys){
         const value = results[key]
-        await sql.query(`INSERT INTO frequencies(queryId, groupId, subgroupId, cityName, frequency)
+        await sql.query(`INSERT INTO frequencies(queryText, cityName, frequency)
         VALUES(?, ?, ?)`,
             [key, region, value])
     }
 }
-async function addFrequency(queryId, groupId, cityName, subgroupId = null){
-    return;
+async function addFrequency(text, region){
     const [freq] = await sql.query(`SELECT * FROM frequencies WHERE cityName = ? 
-                            AND queryId = ?`, [region, queryId])
+                            AND queryText = ?`, [region, text])
     if(!freq.length){
         try {
             const regionId = await utils.getRegionId(region)
@@ -1836,12 +1827,12 @@ async function addFrequency(queryId, groupId, cityName, subgroupId = null){
             if(json?.error) {
                 logger.info(json)
                 logger.info("trying again after 5 seconds")
-                return setTimeout(() => addFrequency({text: text, region: region}), 5000)
+                return setTimeout(() => addFrequency(text, region), 5000)
             }
 
             const frequency = Number(textres)
 
-            await sql.query(`INSERT INTO frequencies(queryId, groupId, subgroupId, cityName, frequency) VALUES (?, ?, ?)`,
+            await sql.query(`INSERT INTO frequencies(queryText, cityName, frequency) VALUES (?, ?, ?)`,
                 [text, region, frequency])
         }
         catch(e) {
