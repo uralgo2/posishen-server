@@ -68,7 +68,7 @@ create table queries (
 );
 create table frequencies (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    queryText INT NOT NULL,
+    queryText VARCHAR(255) NOT NULL,
     cityName VARCHAR(255),
     frequency VARCHAR(20) DEFAULT '--'
 );
