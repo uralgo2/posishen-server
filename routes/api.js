@@ -1723,7 +1723,7 @@ router.post('/getFrequency', async (req, res, next) => {
             for(const text of texts) {
                 const [freq] = await sql.query('SELECT * FROM frequencies WHERE queryText = ? AND cityName = ?', [text, city])
 
-                freqs = freqs.concat(freq)
+                freqs = freqs.concat(freq.length ? freq : ['--'])
             }
 
             return res.send({successful: true, data: freqs})
