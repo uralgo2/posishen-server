@@ -1629,17 +1629,30 @@ router.post('/addQueriesXLSX', async (req, res, next) => {
                 const subgroup = row[2]
 
                 if(!groups.get(group)){
-                    const [res] = await sql.query('INSERT INTO _groups(projectId, groupName) VALUES (?, ?)',
-                        [projectId, group])
 
-                    groups.set(group, res.insertId)
+                    const [g] = await sql.query('SELECT id FROM _groups WHERE groupName = ?', [group])
+
+                    if (!g.length) {
+                        const [res] = await sql.query('INSERT INTO _groups(projectId, groupName) VALUES (?, ?)',
+                            [projectId, group])
+
+                        groups.set(group, res.insertId)
+                    }
+                    else
+                        groups.set(group, g[0].id)
                 }
 
                 if(subgroup && !subgroups.get(subgroup)){
-                    const [res] = await sql.query('INSERT INTO subgroups(groupId, subgroupName) VALUES (?, ?)',
-                        [groups.get(group), subgroup])
-                    logger.info(subgroup)
-                    subgroups.set(subgroup, res.insertId)
+                    const [g] = await sql.query('SELECT id FROM subgroups WHERE subgroupName = ?', [subgroup])
+
+                    if (!g.length) {
+                        const [res] = await sql.query('INSERT INTO subgroups(groupId, subgroupName) VALUES (?, ?)',
+                            [groups.get(group), subgroup])
+
+                       subgroups.set(subgroup, res.insertId)
+                    }
+                    else
+                        subgroups.set(subgroup, g[0].id)
                 }
 
                 const groupId = groups.get(group)
