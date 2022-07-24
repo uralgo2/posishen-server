@@ -1750,8 +1750,6 @@ async function addFrequencyMore({texts, region}){
         }
     }
 
-    logger.info(valid)
-
     if(valid.length){
         const regionId = await utils.getRegionId(region)
 
@@ -1813,9 +1811,13 @@ async function getResultsFrequencies({id, region}){
     const keys = Object.keys(results)
     const values = Object.values(results)
 
+    logger.info(values)
+
     for(const key of keys){
+        const value = values[key]
         await sql.query('INSERT INTO frequencies(queryText, cityName, frequency) VALUES(?, ?, ?)',
-            [key, region, values[key]])
+            [key, region, value])
+        logger.info(value)
     }
 }
 async function addFrequency({text, region}){
