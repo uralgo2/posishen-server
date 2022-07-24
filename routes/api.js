@@ -9,6 +9,7 @@ const config = require("../config");
 const logger = require('log4js').getLogger('pozishen')
 const utils = require('../utils')
 const mysql = require("mysql2/promise")
+const fetch = require('node-fetch')
 
 let sql = null
 
@@ -1730,6 +1731,36 @@ router.get('/getFrequency', async (req, res, next) => {
     }
 })
 
+async function addFrequencyMore({texts, region}){
+    const valid = []
+
+    for(const text of texts){
+        const [freq] = await sql.query('SELECT * FROM frequencies WHERE cityName = ? AND queryText = ?', [region, text])
+
+        if(!freq.length){
+            valid.push(text)
+        }
+    }
+
+    if(valid.length){
+        const regionId = await utils.getRegionId(region)
+
+
+        let res  = await fetch('https://word-keeper.ru/api/create_freqDiff', {
+            method: 'post',
+            body: JSON.stringify({
+                token: config.wordkeeperToken,
+                text: valid.join('\n'),
+                geo: regionId
+            })
+        })
+
+        let json = res.json()
+
+
+    }
+}
+
 async function addFrequency({text, region}){
     const [freq] = await sql.query('SELECT * FROM frequencies WHERE cityName = ? AND queryText = ?', [region, text])
 
@@ -1738,6 +1769,9 @@ async function addFrequency({text, region}){
             const regionId = await utils.getRegionId(region)
 
             const frequency = await utils.getFrequency(regionId, text)
+
+            if(frequency instanceof Error)
+                return setTimeout(() => addFrequency({text: text, region: region}), 5000)
 
             await sql.query('INSERT INTO frequencies(queryText, cityName, frequency) VALUES (?, ?, ?)',
                 [text, region, frequency])

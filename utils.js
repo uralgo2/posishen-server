@@ -16,10 +16,11 @@ module.exports = {
     getFrequency: async (regionId, queryText) => {
         const res = await fetch(`https://word-keeper.ru/api/word?token=${config.wordkeeperToken}&text=${encodeURI(queryText)}&geo=${regionId}&freq=1`)
 
-        const freq = await res.text()
+        const freq = Number(await res.text())
 
-        console.log(freq)
+        if(isNaN(freq))
+            return new Error()
 
-        return Number(freq)
+        return freq
     }
 }
