@@ -68,9 +68,13 @@ create table queries (
 );
 create table frequencies (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    queryText VARCHAR(255) NOT NULL,
+
+    queryId INT NOT NULL,
+    groupId INT NOT NULL,
+    subgroupId INT NOT NULL,
+
     cityName VARCHAR(255),
-    frequency VARCHAR(20) DEFAULT '--'
+    frequency VARCHAR(50) DEFAULT '--'
 );
 create table results (
 	id INT AUTO_INCREMENT PRIMARY KEY, -- айди
@@ -194,3 +198,5 @@ VALUES
     ('Черкесск'),
     ('Ярославль')
 ;
+
+UPDATE projects SET queriesCount = (SELECT COUNT(*) FROM queries WHERE (SELECT projectId FROM _groups WHERE _groups.id = queries.groupId) = projects.id);

@@ -1823,7 +1823,7 @@ async function addFrequency({text, region}){
         try {
             const regionId = await utils.getRegionId(region)
 
-            const res = await fetch(`https://word-keeper.ru/api/word?token=${config.wordkeeperToken}&text=${encodeURI(queryText)}&geo=${regionId}&freq=1`)
+            const res = await fetch(`https://word-keeper.ru/api/word?token=${config.wordkeeperToken}&text=${encodeURI(text)}&geo=${regionId}&freq=1`)
 
             const text = await res.text()
 
