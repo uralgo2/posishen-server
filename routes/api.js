@@ -1737,7 +1737,7 @@ router.post('/addQueriesXLSX', async (req, res, next) => {
 
 router.get('/getFrequency', async (req, res, next) => {
     let secret = req.query['c']
-    let text = Number(req.query['text'])
+    let text = req.query['text']
     let city = req.query['city']
 
     try {
