@@ -1643,7 +1643,7 @@ router.post('/addQueriesXLSX', async (req, res, next) => {
                 }
 
                 const groupId = groups.get(group)
-                const subgroupId = groups.get(subgroup) || null
+                const subgroupId = subgroups.get(subgroup) || null
 
                 const [res] = await sql.query('INSERT INTO queries(groupId, subgroupId, queryText) VALUES (?, ?, ?)',
                     [groupId, subgroupId, text])
