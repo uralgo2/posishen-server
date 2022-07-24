@@ -1710,7 +1710,7 @@ router.post('/addQueriesXLSX', async (req, res, next) => {
 
 router.post('/getFrequency', async (req, res, next) => {
     let secret = req.body['c']
-    let text = req.body['texts']
+    let texts = req.body['texts']
     let city = req.body['city']
 
     try {
@@ -1718,9 +1718,15 @@ router.post('/getFrequency', async (req, res, next) => {
 
         if (sessions.length) {
 
-            const [freq] = await sql.query('SELECT * FROM frequencies WHERE queryText = ? AND cityName = ?', [text, city])
+            let freqs = []
 
-            return res.send({successful: true, data: freq})
+            for(const text of texts) {
+                const [freq] = await sql.query('SELECT * FROM frequencies WHERE queryText = ? AND cityName = ?', [text, city])
+
+                freqs = freqs.concat(freq)
+            }
+
+            return res.send({successful: true, data: freqs})
         }
         else
             throw new ApiError("Сессии не существует")
