@@ -20,6 +20,6 @@ module.exports = {
 
         console.log(freq)
 
-        return Number(await res.text())
+        return Number(freq)
     }
 }
