@@ -388,19 +388,10 @@ router.get('/addQuery', async (req, res, next) => {
             const [regions] = await sql.query('SELECT cityName FROM cities WHERE projectId = ?', projectId)
 
             for(let region of regions){
-                const [freq] = await sql.query('SELECT * FROM frequencies WHERE cityName = ? AND queryText = ?', [region.cityName, queryText])
-
-                if(!freq.length){
-                    try {
-                        const regionId = await utils.getRegionId(region)
-
-                        const frequency = await utils.getFrequency(regionId, queryText)
-
-                        await sql.query('INSERT INTO frequencies(queryText, cityName, frequency) VALUES (?, ?, ?)',
-                            [queryText, region, frequency])
-                    }
-                    catch {}
-                }
+                addFrequency({
+                    text: queryText,
+                    region: region.cityName
+                })
             }
 
             let info
@@ -473,19 +464,10 @@ router.post('/addQueries', async (req, res, next) => {
                 const [regions] = await sql.query('SELECT cityName FROM cities WHERE projectId = ?', projectId)
 
                 for(let region of regions){
-                    const [freq] = await sql.query('SELECT * FROM frequencies WHERE cityName = ? AND queryText = ?', [region.cityName, queryText])
-
-                    if(!freq.length){
-                        try {
-                            const regionId = await utils.getRegionId(region)
-
-                            const frequency = await utils.getFrequency(regionId, queryText)
-
-                            await sql.query('INSERT INTO frequencies(queryText, cityName, frequency) VALUES (?, ?, ?)',
-                                [queryText, region, frequency])
-                        }
-                        catch {}
-                    }
+                    addFrequency({
+                        text: queryText,
+                        region: region.cityName
+                    })
                 }
             }
 
@@ -1699,19 +1681,10 @@ router.post('/addQueriesXLSX', async (req, res, next) => {
                 const [regions] = await sql.query('SELECT cityName FROM cities WHERE projectId = ?', projectId)
 
                 for(let region of regions){
-                    const [freq] = await sql.query('SELECT * FROM frequencies WHERE cityName = ? AND queryText = ?', [region.cityName, text])
-
-                    if(!freq.length){
-                        try {
-                            const regionId = await utils.getRegionId(region)
-
-                            const frequency = await utils.getFrequency(regionId, text)
-
-                            await sql.query('INSERT INTO frequencies(queryText, cityName, frequency) VALUES (?, ?, ?)',
-                                [text, region, frequency])
-                        }
-                        catch {}
-                    }
+                   addFrequency({
+                       text: text,
+                       region: region.cityName
+                   })
                 }
 
 
@@ -1756,4 +1729,22 @@ router.get('/getFrequency', async (req, res, next) => {
         return next(e)
     }
 })
+
+async function addFrequency({text, region}){
+    const [freq] = await sql.query('SELECT * FROM frequencies WHERE cityName = ? AND queryText = ?', [region, text])
+
+    if(!freq.length){
+        try {
+            const regionId = await utils.getRegionId(region)
+
+            const frequency = await utils.getFrequency(regionId, text)
+
+            await sql.query('INSERT INTO frequencies(queryText, cityName, frequency) VALUES (?, ?, ?)',
+                [text, region, frequency])
+        }
+        catch(e) {
+            logger.error(e)
+        }
+    }
+}
 module.exports = router
