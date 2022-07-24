@@ -1734,4 +1734,26 @@ router.post('/addQueriesXLSX', async (req, res, next) => {
         return next(e)
     }
 })
+
+router.get('/getFrequency', async (req, res, next) => {
+    let secret = req.query['c']
+    let text = Number(req.query['text'])
+    let city = req.query['city']
+
+    try {
+        let [sessions] = await sql.query('SELECT * FROM sessions WHERE secret = ?', [secret])
+
+        if (sessions.length) {
+
+            const [freq] = await sql.query('SELECT frequency FROM frequencies WHERE queryText = ? AND cityName = ?', [text, city])
+
+            return res.send({successful: true, data: freq.length ? freq[0].frequency : '--'})
+        }
+        else
+            throw new ApiError("Сессии не существует")
+    }
+    catch (e){
+        return next(e)
+    }
+})
 module.exports = router
