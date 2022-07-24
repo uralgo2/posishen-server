@@ -1817,7 +1817,7 @@ async function getResultsFrequencies({id, region}){
         const value = values[key]
         await sql.query('INSERT INTO frequencies(queryText, cityName, frequency) VALUES(?, ?, ?)',
             [key, region, value])
-        logger.info(value)
+        logger.info('%s = %s', key, value)
     }
 }
 async function addFrequency({text, region}){
