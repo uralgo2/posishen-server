@@ -1622,12 +1622,12 @@ router.post('/addQueriesXLSX', async (req, res, next) => {
 
             const groups = new Map()
             const subgroups = new Map()
-            logger.info(typeof data)
             for(const row of data){
                 const group = row[0]
                 const text = row[1]
                 const subgroup = row[2]
-                logger.info(row)
+
+                //logger.info(row)
                 if(!groups.get(group)){
                     const [res] = await sql.query('INSERT INTO _groups(projectId, groupName) VALUES (?, ?)',
                         [projectId, group])
@@ -1638,18 +1638,16 @@ router.post('/addQueriesXLSX', async (req, res, next) => {
                 if(subgroup && !subgroups.get(subgroup)){
                     const [res] = await sql.query('INSERT INTO subgroups(groupId, subgroupName) VALUES (?, ?)',
                         [groups.get(group), subgroup])
-
+                    logger.info(subgroup)
                     subgroups.set(subgroup, res.insertId)
                 }
 
                 const groupId = groups.get(group)
                 const subgroupId = groups.get(subgroup) || null
-                console.log(subgroupId)
+
                 const [res] = await sql.query('INSERT INTO queries(groupId, subgroupId, queryText) VALUES (?, ?, ?)',
                     [groupId, subgroupId, text])
 
-
-                logger.info(res)
                 infos.push({
                     id: res.insertId,
                     queryText: text,
