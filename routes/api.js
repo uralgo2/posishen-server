@@ -1622,7 +1622,7 @@ router.post('/addQueriesXLSX', async (req, res, next) => {
 
             const groups = new Map()
             const subgroups = new Map()
-            logger.info(data)
+            logger.info(typeof data)
             for(const row of data){
                 const group = row[0]
                 const text = row[1]
