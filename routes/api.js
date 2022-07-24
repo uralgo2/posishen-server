@@ -1587,5 +1587,82 @@ router.get('/getLastAndFirstPositionDate', async (req, res, next) => {
         return next(e)
     }
 })
+router.post('/addQueriesXLSX', async (req, res, next) => {
+    const secret = req.body['c']
+    const data = req.body['data']
+    const projectId = Number(req.body['projectId'])
 
+    try {
+        let [sessions] = await sql.query('SELECT * FROM sessions WHERE secret = ?', [secret])
+
+        if (sessions.length) {
+            let session = sessions[0]
+
+            let [projects] = await sql.query('SELECT * FROM projects WHERE id = ?', [projectId])
+
+            if(!projects.length)
+                throw new ApiError("Проекта не существует")
+
+            /**
+             * @type {Project}
+             */
+            let project = projects[0]
+
+            let [users] = await sql.query('SELECT * FROM users WHERE id = ?', [session.userId])
+
+            /**
+             * @type {User}
+             */
+            let user = users[0]
+
+            if(user.id !== project.userId)
+                throw new ApiError("Вы не владелец проекта")
+
+            const infos = []
+
+            const groups = new Map()
+            const subgroups = new Map()
+
+            for(const row of data){
+                const group = row[0]
+                const text = row[1]
+                const subgroup = row[2]
+
+                if(!groups.get(group)){
+                    const [res] = await sql.query('INSERT INTO _groups(projectId, groupName) VALUES (?, ?)',
+                        [projectId, group])
+
+                    groups.set(group, res.insertId)
+                }
+
+                if(subgroup && !subgroups.get(subgroup)){
+                    const [res] = await sql.query('INSERT INTO subgroups(groupId, subgroupName) VALUES (?, ?)',
+                        [groups.get(group), subgroup])
+
+                    subgroups.set(subgroup, res.insertId)
+                }
+
+                const groupId = groups.get(group)
+                const subgroupId = groups.get(subgroup) || null
+
+                const [res] = sql.query('INSERT INTO queries(groupId, subgroupId, queryText) VALUES (?, ?, ?)',
+                    [groupId, subgroupId, text])
+
+                infos.push({
+                    id: res.insertId,
+                    queryText: text,
+                    groupId: groupId,
+                    subgroupId: subgroupId
+                })
+            }
+
+            return res.send({successful: true, data: infos})
+        }
+        else
+            throw new ApiError("Сессии не существует")
+    }
+    catch (e){
+        return next(e)
+    }
+})
 module.exports = router
