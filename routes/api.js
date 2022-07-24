@@ -1825,9 +1825,9 @@ async function addFrequency({text, region}){
 
             const res = await fetch(`https://word-keeper.ru/api/word?token=${config.wordkeeperToken}&text=${encodeURI(text)}&geo=${regionId}&freq=1`)
 
-            const text = await res.text()
+            const textres = await res.text()
 
-            const json = JSON.parse(text)
+            const json = JSON.parse(textres)
 
             if(json?.error) {
                 logger.info(json)
@@ -1835,7 +1835,7 @@ async function addFrequency({text, region}){
                 return setTimeout(() => addFrequency({text: text, region: region}), 5000)
             }
 
-            const frequency = Number(text)
+            const frequency = Number(textres)
 
             await sql.query('INSERT INTO frequencies(queryText, cityName, frequency) VALUES (?, ?, ?)',
                 [text, region, frequency])
